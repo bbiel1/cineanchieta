@@ -1,0 +1,231 @@
+:root {
+  --fundo: #0b0f19;
+  --fundo-card: #151d2e;
+  --borda: #243049;
+  --texto: #eef2ff;
+  --texto-suave: #94a3b8;
+  --azul: #60a5fa;
+  --ambar: #fbbf24;
+  --verde: #34d399;
+  --sombra: 0 20px 45px rgba(2, 6, 23, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 15% -10%, rgba(96, 165, 250, 0.18), transparent 35%),
+    radial-gradient(circle at 85% 0%, rgba(167, 139, 250, 0.16), transparent 30%),
+    var(--fundo);
+  color: var(--texto);
+}
+
+.cabecalho {
+  border-bottom: 1px solid var(--borda);
+}
+
+.cabecalho__conteudo {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 32px;
+}
+
+.cabecalho__eyebrow {
+  margin: 0 0 10px;
+  color: var(--azul);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cabecalho__titulo {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  letter-spacing: -0.03em;
+}
+
+.cabecalho__titulo span {
+  background: linear-gradient(120deg, #ffffff 10%, #a5b4fc 55%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cabecalho__subtitulo {
+  margin: 12px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.conteudo {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.painel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.estatistica {
+  padding: 20px 24px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(18, 24, 39, 0.9));
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  box-shadow: var(--sombra);
+}
+
+.estatistica__numero {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.estatistica__rotulo {
+  display: block;
+  margin-top: 6px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aviso {
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-left: 4px solid var(--ambar);
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.08);
+  color: #fde68a;
+  font-weight: 600;
+}
+
+.lista {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.titulo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 18px 24px;
+  overflow: hidden;
+  background: var(--fundo-card);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.titulo::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--cor-status, var(--borda));
+}
+
+.titulo:hover {
+  transform: translateY(-2px);
+  border-color: #33415c;
+}
+
+.titulo--quero_ver {
+  --cor-status: var(--azul);
+}
+
+.titulo--assistindo {
+  --cor-status: var(--ambar);
+}
+
+.titulo--assisti {
+  --cor-status: var(--verde);
+}
+
+.titulo__nome {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.titulo__etiquetas {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.etiqueta--quero_ver {
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #93c5fd;
+}
+
+.etiqueta--assistindo {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fcd34d;
+}
+
+.etiqueta--assisti {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+}
+
+.etiqueta--filme {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #c4b5fd;
+}
+
+.etiqueta--serie {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+}
+
+@media (max-width: 620px) {
+  .cabecalho__conteudo {
+    padding-top: 36px;
+  }
+
+  .painel {
+    grid-template-columns: 1fr;
+  }
+
+  .titulo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,15 @@
+# Dependências
+node_modules/
+
+# Build do Vite
+dist/
+
+# Arquivos locais e logs
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Material didático (não publicar)
+TaskFlow_Aula1_ALUNO - Copy.pdf

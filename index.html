@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineAnchieta</title>
+    <link rel="stylesheet" href="./css/cineanchieta.css" />
+  </head>
+  <body>
+    <header class="cabecalho">
+      <div class="cabecalho__conteudo">
+        <p class="cabecalho__eyebrow">Sua estante de filmes e séries</p>
+        <h1 class="cabecalho__titulo"><span id="nome-do-sistema">—</span></h1>
+        <p class="cabecalho__subtitulo">
+          <span id="versao">—</span> · <span id="data-de-hoje">—</span>
+        </p>
+      </div>
+    </header>
+
+    <main class="conteudo">
+      <section class="painel" aria-label="Resumo da lista">
+        <div class="estatistica">
+          <span class="estatistica__numero" id="total">0</span>
+          <span class="estatistica__rotulo">títulos</span>
+        </div>
+        <div class="estatistica">
+          <span class="estatistica__numero" id="quero-ver">0</span>
+          <span class="estatistica__rotulo">quero ver</span>
+        </div>
+      </section>
+
+      <!-- aviso escondido (hidden): o laço while é quem o mostra -->
+      <p class="aviso" id="comece-por" hidden></p>
+
+      <!-- a lista começa vazia: quem a preenche é o seu código -->
+      <ul class="lista" id="lista"></ul>
+    </main>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
