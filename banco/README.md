@@ -123,6 +123,16 @@ ORDER BY t.id, g.nome;
 
 Os usuários de exemplo são **Ana** e **Bruno**, ambos com a senha `senha123`. O banco guarda apenas o hash bcrypt.
 
+## Conferência realizada
+
+Em 10/11/2026 o `script.sql` foi executado em **MySQL 8.4.13**:
+
+- 4 tabelas criadas: `usuarios`, `titulos`, `generos` e `titulo_genero`.
+- 7 títulos: 6 da Ana e 1 do Bruno.
+- Painel da Ana: 2 `quero_ver`, 2 `assistindo` e 2 `assisti`.
+- Os três testes de erro retornaram os códigos **1265**, **3819** e **1452**.
+- Os desafios Prata e Ouro também rodaram sem erro.
+
 ## Testes de erro
 
 O arquivo [`testes_erros.sql`](testes_erros.sql) provoca as três proteções do banco:
