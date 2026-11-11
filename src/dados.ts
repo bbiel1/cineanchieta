@@ -7,6 +7,7 @@ export const titulos: Titulo[] = [
     status: "assisti",
     formato: "filme",
     generos: ["ficção científica", "drama"],
+    lancamento: "2014-11-07",
     adicionadoEm: new Date(),
   },
   {
@@ -16,6 +17,7 @@ export const titulos: Titulo[] = [
     status: "assistindo",
     formato: "serie",
     generos: ["drama", "crime"],
+    lancamento: "2008-01-20",
     adicionadoEm: new Date(),
   },
   {
@@ -24,6 +26,7 @@ export const titulos: Titulo[] = [
     status: "quero_ver",
     formato: "filme",
     generos: ["ficção científica", "aventura"],
+    lancamento: "2024-02-29",
     adicionadoEm: new Date(),
   },
   {
@@ -32,6 +35,7 @@ export const titulos: Titulo[] = [
     status: "quero_ver",
     formato: "serie",
     generos: ["ficção científica", "terror"],
+    lancamento: "2016-07-15",
     adicionadoEm: new Date(),
   },
   {
@@ -40,6 +44,7 @@ export const titulos: Titulo[] = [
     status: "assisti",
     formato: "filme",
     generos: ["comédia", "aventura"],
+    lancamento: "2000-09-15",
     adicionadoEm: new Date(),
   },
   {
@@ -48,6 +53,7 @@ export const titulos: Titulo[] = [
     status: "assistindo",
     formato: "serie",
     generos: ["drama", "terror"],
+    lancamento: "2023-01-15",
     adicionadoEm: new Date(),
   },
 ];

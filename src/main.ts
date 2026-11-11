@@ -1,22 +1,18 @@
-import { elemento } from "./dom";
+import { campo, elemento, selecao } from "./dom";
 import { titulos } from "./dados";
+import type { Formato, Titulo } from "./tipos";
+import { adicionarTitulo, transformar } from "./servicos";
 
-// ---------- Parte 1: tipos primitivos ----------
-const nomeDoSistema: string = "CineAnchieta";
-const versao: string = "0.1.0";
-const hoje: string = new Date().toLocaleDateString("pt-BR");
-const autor = "Grupo Filmes e Séries"; // inferência: o TypeScript deduz que é string
+// ---------- Cabeçalho ----------
+elemento("nome-do-sistema").textContent = "CineAnchieta";
+elemento("versao").textContent = "v0.2.0";
+elemento("data-de-hoje").textContent = new Date().toLocaleDateString("pt-BR");
 
-elemento("nome-do-sistema").textContent = nomeDoSistema;
-elemento("versao").textContent = `v${versao}`;
-elemento("data-de-hoje").textContent = hoje;
-console.log(`CineAnchieta iniciado. Autor: ${autor}`); // aparece no F12
+// O estado do programa: a lista que está valendo agora
+const lista: Titulo[] = [...titulos];
 
-// ---------- Parte 3: o array e os laços ----------
-const lista = elemento("lista");
-
-// LAÇO 1 — for...of: percorre os valores, sem índice
-for (const titulo of titulos) {
+// Um título vira um <li> pronto para a tela
+function criarItem(titulo: Titulo): HTMLLIElement {
   const item = document.createElement("li");
   item.className = `titulo titulo--${titulo.status}`;
 
@@ -37,28 +33,61 @@ for (const titulo of titulos) {
 
   etiquetas.append(status, formato);
   item.append(nome, etiquetas);
-  lista.append(item);
+  return item;
 }
 
-// LAÇO 2 — for com índice: contando os "quero ver"
-let queroVer = 0;
-for (let i = 0; i < titulos.length; i++) {
-  if (titulos[i].status === "quero_ver") {
-    queroVer++;
+// A função que desenha a tela inteira a partir da lista
+function desenhar(): void {
+  const itens = transformar(lista, criarItem); // a função de alta ordem
+  elemento("lista").replaceChildren(...itens);
+
+  let queroVer = 0;
+  for (const titulo of lista) {
+    if (titulo.status === "quero_ver") {
+      queroVer++;
+    }
+  }
+  elemento("total").textContent = String(lista.length);
+  elemento("quero-ver").textContent = String(queroVer);
+
+  // while: achar o primeiro título de status "quero ver"
+  // (não sabemos quantas voltas: o laço para assim que encontra)
+  let posicao = 0;
+  while (posicao < lista.length && lista[posicao].status !== "quero_ver") {
+    posicao++;
+  }
+
+  const aviso = elemento("comece-por");
+  if (posicao < lista.length) {
+    const proximo = lista[posicao];
+    aviso.textContent = `Comece por: #${proximo.id} ${proximo.titulo}`;
+    aviso.hidden = false;
+  } else {
+    aviso.hidden = true;
   }
 }
-elemento("total").textContent = String(titulos.length);
-elemento("quero-ver").textContent = String(queroVer);
 
-// LAÇO 3 — while: achar o primeiro título de status "quero ver"
-// (não sabemos quantas voltas: o laço para assim que encontra)
-let posicao = 0;
-while (posicao < titulos.length && titulos[posicao].status !== "quero_ver") {
-  posicao++;
-}
-if (posicao < titulos.length) {
-  // achou: mostra o aviso na página
-  const proximo = titulos[posicao];
-  elemento("comece-por").textContent = `Comece por: #${proximo.id} ${proximo.titulo}`;
-  elemento("comece-por").hidden = false;
-}
+// O formulário: a função abaixo é um CALLBACK — quem a chama é o navegador
+elemento("formulario").addEventListener("submit", (evento) => {
+  evento.preventDefault(); // sem isto, a página recarrega e tudo se perde
+  const erro = elemento("erro");
+  erro.textContent = "";
+
+  try {
+    adicionarTitulo(lista, {
+      titulo: campo("titulo").value.trim(),
+      formato: selecao("formato").value as Formato,
+      generos: [],
+    });
+
+    campo("titulo").value = "";
+    campo("titulo").focus();
+    desenhar(); // mudou a lista? desenhe de novo
+  } catch (falha) {
+    if (falha instanceof Error) {
+      erro.textContent = falha.message;
+    }
+  }
+});
+
+desenhar();

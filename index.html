@@ -29,6 +29,31 @@
         </div>
       </section>
 
+      <form class="formulario" id="formulario">
+        <div class="campo">
+          <label class="campo__rotulo" for="titulo">Título</label>
+          <input
+            class="campo__entrada"
+            id="titulo"
+            type="text"
+            maxlength="120"
+            autocomplete="off"
+            placeholder="Ex.: Interestelar"
+            aria-describedby="erro"
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="formato">Formato</label>
+          <select class="campo__selecao" id="formato">
+            <option value="filme" selected>Filme</option>
+            <option value="serie">Série</option>
+          </select>
+        </div>
+        <button class="botao botao--primario" type="submit">Cadastrar</button>
+      </form>
+
+      <p class="campo__erro" id="erro" role="alert"></p>
+
       <!-- aviso escondido (hidden): o laço while é quem o mostra -->
       <p class="aviso" id="comece-por" hidden></p>
 

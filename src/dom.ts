@@ -7,3 +7,12 @@ export function elemento(id: string): HTMLElement {
 
   return encontrado;
 }
+
+// Atalhos com o tipo certo para os campos do formulário
+export function campo(id: string): HTMLInputElement {
+  return elemento(id) as HTMLInputElement;
+}
+
+export function selecao(id: string): HTMLSelectElement {
+  return elemento(id) as HTMLSelectElement;
+}
