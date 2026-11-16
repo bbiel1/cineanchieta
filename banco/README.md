@@ -1,6 +1,6 @@
 # Banco de dados — CineAnchieta
 
-Banco do projeto do grupo para a Aula 2: **`cineanchieta`**.
+Banco do projeto do grupo, criado na Aula 2 e lido pela API a partir da Aula 3: **`cineanchieta`**.
 
 O script principal é o [`script.sql`](script.sql). Ele **recria o banco do zero** (tem um `DROP DATABASE`), então rode-o apenas quando quiser resetar os dados.
 
@@ -147,8 +147,8 @@ Rode **um comando por vez**, selecionando a linha e clicando no raio. Depois rod
 
 ## Desafios da Entrega 2
 
-- [`desafio_prata.sql`](desafio_prata.sql): duas tarefas novas da Ana, cada uma com uma tag ligada em `titulo_genero`.
-- [`desafio_ouro.sql`](desafio_ouro.sql): tabela `comentarios` (uma tarefa tem muitos comentários) com exemplos.
+- [`desafio_prata.sql`](desafio_prata.sql): dois títulos novos da Ana, cada um com um gênero ligado em `titulo_genero`.
+- [`desafio_ouro.sql`](desafio_ouro.sql): tabela `comentarios` (um título tem muitos comentários) com exemplos.
 
 Rode os dois **depois** do `script.sql`. O diagrama acima já inclui a tabela `comentarios` do desafio Ouro; os detalhes dela estão abaixo.
 

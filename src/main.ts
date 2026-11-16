@@ -1,15 +1,16 @@
 import { campo, elemento, selecao } from "./dom";
-import { titulos } from "./dados";
+import { buscarTitulo, listarTitulos } from "./api";
 import type { Formato, Titulo } from "./tipos";
-import { adicionarTitulo, transformar } from "./servicos";
+import { adicionarTitulo } from "./servicos";
 
 // ---------- Cabeçalho ----------
 elemento("nome-do-sistema").textContent = "CineAnchieta";
-elemento("versao").textContent = "v0.2.0";
+elemento("versao").textContent = "v0.3.0";
 elemento("data-de-hoje").textContent = new Date().toLocaleDateString("pt-BR");
 
-// O estado do programa: a lista que está valendo agora
-const lista: Titulo[] = [...titulos];
+// O estado do programa: a lista que está valendo agora.
+// Começa vazia: quem preenche é a API (por isso é let, não const).
+let lista: Titulo[] = [];
 
 // Um título vira um <li> pronto para a tela
 function criarItem(titulo: Titulo): HTMLLIElement {
@@ -38,28 +39,18 @@ function criarItem(titulo: Titulo): HTMLLIElement {
 
 // A função que desenha a tela inteira a partir da lista
 function desenhar(): void {
-  const itens = transformar(lista, criarItem); // a função de alta ordem
-  elemento("lista").replaceChildren(...itens);
+  // map: o antigo transformar da Aula 2, agora pronto na linguagem
+  elemento("lista").replaceChildren(...lista.map(criarItem));
 
-  let queroVer = 0;
-  for (const titulo of lista) {
-    if (titulo.status === "quero_ver") {
-      queroVer++;
-    }
-  }
+  // filter: só os que passam no teste
+  const queroVer = lista.filter((titulo) => titulo.status === "quero_ver");
   elemento("total").textContent = String(lista.length);
-  elemento("quero-ver").textContent = String(queroVer);
+  elemento("quero-ver").textContent = String(queroVer.length);
 
-  // while: achar o primeiro título de status "quero ver"
-  // (não sabemos quantas voltas: o laço para assim que encontra)
-  let posicao = 0;
-  while (posicao < lista.length && lista[posicao].status !== "quero_ver") {
-    posicao++;
-  }
-
+  // find: o primeiro título de status "quero ver" (ou undefined)
+  const proximo = lista.find((titulo) => titulo.status === "quero_ver");
   const aviso = elemento("comece-por");
-  if (posicao < lista.length) {
-    const proximo = lista[posicao];
+  if (proximo) {
     aviso.textContent = `Comece por: #${proximo.id} ${proximo.titulo}`;
     aviso.hidden = false;
   } else {
@@ -67,7 +58,8 @@ function desenhar(): void {
   }
 }
 
-// O formulário: a função abaixo é um CALLBACK — quem a chama é o navegador
+// O formulário: a função abaixo é um CALLBACK — quem a chama é o navegador.
+// Aula 3: o cadastro ainda grava só na tela; na Aula 4 ele vai para o banco.
 elemento("formulario").addEventListener("submit", (evento) => {
   evento.preventDefault(); // sem isto, a página recarrega e tudo se perde
   const erro = elemento("erro");
@@ -90,4 +82,45 @@ elemento("formulario").addEventListener("submit", (evento) => {
   }
 });
 
-desenhar();
+// Prata: busca um título pelo id e mostra o resultado no console
+async function mostrarTitulo(id: number): Promise<void> {
+  try {
+    const procurado = await buscarTitulo(id);
+    if (procurado) {
+      console.log(`Encontrado: #${procurado.id} ${procurado.titulo}`);
+    } else {
+      console.log(`Título #${id} não encontrado.`);
+    }
+  } catch (falha) {
+    if (falha instanceof Error) {
+      console.error(falha.message);
+    }
+  }
+}
+
+// Ouro: aviso na tela quando a API não responde
+function avisarApiForaDoAr(mensagem: string): void {
+  const aviso = elemento("aviso-api");
+  aviso.textContent = mensagem;
+  aviso.hidden = false;
+}
+
+// O começo do programa: busca no banco, depois desenha
+async function iniciar(): Promise<void> {
+  try {
+    lista = await listarTitulos();
+    desenhar();
+  } catch (falha) {
+    if (falha instanceof Error) {
+      avisarApiForaDoAr(
+        "Não foi possível carregar os títulos. Verifique se a API está rodando e recarregue a página."
+      );
+    }
+    return;
+  }
+
+  // find no banco: pode não encontrar
+  await mostrarTitulo(3);
+}
+
+iniciar();

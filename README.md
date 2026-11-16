@@ -2,36 +2,44 @@
 
 Sistema de acompanhamento de filmes e séries desenvolvido como projeto do grupo no curso TaskFlow.
 
-**Aula 2** — funções, formulário de cadastro e banco de dados MySQL.
+**Aula 3** — API Express + MySQL, lista vinda do banco com `map`, `filter` e `find`.
 
 ## Tema
 
 - **Registro principal:** título (filme ou série)
 - **Status:** quero ver, assistindo, assisti
 - **Formato:** filme ou série
-- **Gêneros:** lista de textos
+- **Gêneros:** lista de textos (a API ainda devolve uma lista vazia; entra na Aula 6)
 - **Data:** adicionadoEm
 - **Data de lançamento:** lancamento (opcional)
 
 ## O que a página faz
 
 - Exibe o nome do sistema, a versão e a data de hoje
-- Desenha os títulos com a função de alta ordem `transformar()` e `replaceChildren()`
-- Mostra a barra lateral e a etiqueta coloridas conforme o status
-- Conta o total de títulos e quantos estão em "quero ver"
-- Usa um `while` para encontrar o primeiro título de status "quero ver" e exibir o aviso "Comece por"
+- Busca os títulos na API (`/api/titulos`) e desenha a lista com `map()` e `replaceChildren()`
+- Conta o total e quantos estão em "quero ver" com `filter()`
+- Usa `find()` para achar o primeiro título de status "quero ver" e exibir o aviso "Comece por"
+- Mostra a barra lateral e a etiqueta coloridas conforme o status e o formato
 - **Novo:** o formulário cadastra um título na hora, com validação de título mínimo de 3 caracteres
-- **Novo:** o formulário não recarrega a página (`preventDefault()`)
-- **Novo:** a lista é redesenhada por `desenhar()` sempre que um título é cadastrado
+- **Novo:** o console mostra o resultado de `mostrarTitulo(3)` (desafio Prata)
+- **Novo:** se a API estiver fora do ar, uma mensagem amigável aparece na tela (desafio Ouro)
 
-> Os títulos cadastrados na tela ficam apenas na memória do navegador. A persistência no MySQL começa na Aula 3, quando a API entrar no projeto.
+> A lista já é lida do MySQL. O cadastro do formulário ainda fica só na memória do navegador; a escrita no banco começa na Aula 4.
 
 ## Estrutura
 
 ```
 ├─ index.html
+├─ vite.config.ts
 ├─ css/
 │  └─ cineanchieta.css
+├─ api/
+│  ├─ src/
+│  │  ├─ banco.ts
+│  │  └─ servidor.ts
+│  ├─ .env.exemplo
+│  ├─ package.json
+│  └─ tsconfig.json
 ├─ banco/
 │  ├─ script.sql
 │  ├─ testes_erros.sql
@@ -39,14 +47,35 @@ Sistema de acompanhamento de filmes e séries desenvolvido como projeto do grupo
 │  ├─ desafio_ouro.sql
 │  └─ README.md
 └─ src/
+   ├─ api.ts
    ├─ dom.ts
    ├─ tipos.ts
-   ├─ dados.ts
    ├─ servicos.ts
    └─ main.ts
 ```
 
 ## Como rodar
+
+O projeto tem dois programas: a API (porta 3000) e a página (porta 5173).
+
+### 1. Banco de dados
+
+O MySQL precisa estar rodando. Se o banco `cineanchieta` ainda não existir, rode `banco/script.sql` no Workbench (ele recria o banco do zero).
+
+### 2. API
+
+```bash
+cd api
+npm install
+# copie .env.exemplo para .env e preencha DB_SENHA
+npm run dev
+```
+
+A API responde em `http://localhost:3000`.
+
+### 3. Página
+
+Em outro terminal, na raiz do projeto:
 
 ```bash
 npm install
@@ -59,7 +88,24 @@ Para conferir os tipos:
 
 ```bash
 npm run verificar
+cd api
+npm run verificar
 ```
+
+## API
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /api/titulos` | Devolve todos os títulos do banco, em ordem de id |
+| `GET /api/titulos/:id` | Devolve um título ou `404` com uma mensagem |
+
+Exemplos:
+
+- `http://localhost:3000/api/titulos`
+- `http://localhost:3000/api/titulos/3` → Duna: Parte Dois
+- `http://localhost:3000/api/titulos/99` → 404
+
+Enquanto os gêneros não são lidos da tabela `titulo_genero` (Aula 6), a API devolve `generos: []` em cada título.
 
 ## Banco de dados
 
@@ -96,9 +142,11 @@ Detalhes do modelo, DER, testes de erro e desafios: [`banco/README.md`](banco/RE
 
 - TypeScript
 - Vite
+- Node.js e Express
+- mysql2
 - HTML e CSS
 - MySQL 8
 
 ## Próxima aula
 
-Na Aula 3 a lista passa a vir do banco por meio de uma API em Node.js + TypeScript.
+Na Aula 4 o cadastro, a conclusão e a remoção de títulos passam a gravar no banco.
