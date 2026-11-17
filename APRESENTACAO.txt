@@ -1,0 +1,257 @@
+﻿======================================================================
+CINEANCHIETA - RESUMO PARA APRESENTACAO
+======================================================================
+Projeto: CineAnchieta
+Versao: v0.4.0 (Aula 4)
+Commit da Aula 4: f9fd190
+
+COMO USAR
+
+- Para ensaiar: leia a secao 1 e a secao 5.
+- Na hora: use a cola final da secao 7.
+- Se o professor perguntar algo fora do roteiro, use as respostas da secao 6.
+
+======================================================================
+1. RESUMO EM 30 SEGUNDOS
+======================================================================
+
+"O CineAnchieta e um sistema web para acompanhar filmes e series. O usuario
+cadastra um titulo, escolhe o formato e acompanha o status: quero ver,
+assistindo ou assisti. Na Aula 4 o projeto ganhou CRUD completo no MySQL:
+cadastrar, mudar status, editar e remover, tudo salvo no banco. A API usa
+uma dona fixa, a Ana, para simular o login que ainda nao existe. O projeto
+usa TypeScript, Vite, Express e MySQL."
+
+======================================================================
+2. O QUE O SISTEMA FAZ
+======================================================================
+
+- Lista os titulos da Ana vindos do MySQL.
+- Mostra o painel: total, quero ver, assistindo e assistidos.
+- Mostra o aviso "Comece por" com o primeiro titulo de status quero ver.
+- Cadastra titulo, formato e data de lancamento.
+- Muda o status pelos botoes Comecar, Concluir, Quero ver e Reabrir.
+- Edita o titulo pelo botao Editar.
+- Remove o titulo pelo botao Remover.
+- Destaca com "Em breve" os titulos com lancamento futuro.
+- Avisa quando a API esta fora do ar.
+
+======================================================================
+3. O QUE FOI FEITO EM CADA AULA
+======================================================================
+
+AULA 1 - BASE
+
+- HTML, CSS e TypeScript.
+- Tipos Titulo, Formato e Status.
+- Lista inicial com map, filter e find.
+
+AULA 2 - FORMULARIO E BANCO
+
+- Formulario com validacao de no minimo 3 caracteres.
+- preventDefault e lista redesenhada por desenhar().
+- Banco cineanchieta com 4 tabelas.
+- Data de lancamento no tipo Titulo.
+- Os dados ainda ficavam na memoria do navegador.
+
+AULA 3 - API E MYSQL
+
+- API Express + MySQL na pasta api/.
+- GET /api/titulos e GET /api/titulos/:id.
+- Proxy do Vite para a porta 3000.
+- A lista passou a vir do banco.
+- mostrarTitulo(3) no console e aviso de API fora do ar.
+
+AULA 4 - CRUD COMPLETO (entrega atual)
+
+- Rotas POST, PATCH, PUT e DELETE.
+- Edicao com prompt (desafio Prata).
+- Lancamento e "Em breve" (desafio Ouro).
+- Painel com quatro estatisticas.
+- USUARIO_FIXO = 1: tudo filtra pela Ana.
+- Validacao no servidor e erros 400, 404 e 500.
+
+======================================================================
+4. O QUE MUDOU NA AULA 4
+======================================================================
+
+ROTAS
+
+- GET /api/titulos -> 200
+- GET /api/titulos/:id -> 200 ou 404
+- POST /api/titulos -> 201 ou 400
+- PATCH /api/titulos/:id/status -> 204, 400 ou 404
+- PUT /api/titulos/:id -> 200, 400 ou 404
+- DELETE /api/titulos/:id -> 204 ou 404
+
+DECISOES IMPORTANTES
+
+- USUARIO_FIXO = 1 simula a Ana ate o login da Aula 5.
+- O titulo 7 e do Bruno, entao responde 404 para a Ana.
+- PATCH grava assistido_em = NOW() ao concluir e NULL ao reabrir.
+- PUT usa COALESCE(?, titulo) para nao apagar o nome sem querer.
+- Todas as consultas usam ? para evitar SQL injection.
+- A API valida os dados; o HTML apenas ajuda o usuario.
+
+BANCO
+
+- 4 tabelas: usuarios, titulos, generos e titulo_genero.
+- 2 usuarios: Ana e Bruno.
+- 7 titulos: 6 da Ana e 1 do Bruno.
+- A tela mostra 6; o titulo 7 responde 404.
+
+OBSERVACAO DO AMBIENTE
+
+- O projeto foi escrito para MySQL 8.
+- Neste computador usamos XAMPP com MariaDB 10.4.
+- A unica diferenca pratica foi a collation do script:
+  utf8mb4_unicode_ci no lugar de utf8mb4_0900_ai_ci.
+
+======================================================================
+5. ROTEIRO DA DEMONSTRACAO
+======================================================================
+
+ANTES DA AULA
+
+1. Abra C:\Users\Gabriel\xampp\mysql_start.bat e deixe a janela aberta.
+2. Em api/: npm run dev
+3. Na raiz do projeto: npm run dev
+4. Abra http://localhost:5173 e o console do navegador (F12).
+
+NA TELA
+
+1. Mostre a lista e o painel 6 / 2 / 2 / 2.
+   Diga: "Os seis titulos vem do MySQL."
+
+2. Mostre o console com "Encontrado: #3 Duna: Parte Dois".
+
+3. Cadastre "Duna: Parte Tres", filme, lancamento 2027-03-20.
+   Mostre a etiqueta "Em breve" e o total indo para 7.
+
+4. Clique em Comecar, Concluir e Reabrir.
+   Diga: "Cada clique chama a API e o banco confirma."
+
+5. Clique em Editar e troque o nome.
+
+6. Clique em Remover e mostre o total voltando para 6.
+
+7. Abra no navegador:
+   - http://localhost:3000/api/titulos
+   - http://localhost:3000/api/titulos/3
+   - http://localhost:3000/api/titulos/7 (404, e do Bruno)
+
+8. Encerre: "Versao 0.4.0, commit f9fd190."
+
+SE ALGO FALHAR
+
+- Banco: confira o mysql_start.bat.
+- API: confira a porta 3000 e o npm run dev em api/.
+- Pagina: confira a porta 5173 e o npm run dev na raiz.
+- Nao rode banco/script.sql na apresentacao: ele apaga e recria o banco.
+
+======================================================================
+6. PERGUNTAS PROVAVEIS (respostas curtas)
+======================================================================
+
+1. O que e CRUD?
+
+   Create, Read, Update e Delete: criar, ler, atualizar e apagar.
+   No projeto: POST, GET, PUT/PATCH e DELETE.
+
+2. Por que o titulo 7 da 404 se ele existe?
+
+   Porque pertence ao Bruno. A consulta filtra por usuario_id e responde
+   404 para nao revelar dados de outra pessoa.
+
+3. Por que existe USUARIO_FIXO?
+
+   Porque a Aula 4 ainda nao tem login. A constante 1 simula a Ana; na
+   Aula 5 ela sera trocada pelo usuario autenticado.
+
+4. Qual a diferenca entre PUT e PATCH?
+
+   PATCH altera so o status. PUT altera o titulo. Cada rota tem uma
+   responsabilidade.
+
+5. Por que POST devolve 201 e PATCH/DELETE devolvem 204?
+
+   201 significa criado e inclui o registro novo. 204 significa sucesso
+   sem conteudo para devolver.
+
+6. Como o projeto evita SQL injection?
+
+   Todas as consultas usam placeholders ?. O mysql2 envia o comando e os
+   valores separados; o texto do usuario nao vira SQL.
+
+7. Por que validar no servidor se o HTML ja tem maxlength?
+
+   Porque a API pode ser chamada direto, sem passar pela pagina. A
+   validacao do servidor e a que vale de verdade.
+
+8. Como funciona o "Em breve"?
+
+   A data de lancamento e comparada com a data de hoje em formato
+   AAAA-MM-DD. Se for futura, o titulo ganha a etiqueta.
+
+9. O que e o assistido_em?
+
+   A data em que o titulo foi concluido. O PATCH grava NOW() ao marcar
+   assisti e NULL ao reabrir.
+
+10. O que e COALESCE?
+
+    Uma funcao SQL que devolve o primeiro valor nao nulo. No PUT,
+    COALESCE(?, titulo) mantem o nome antigo se nenhum novo for enviado.
+
+11. Como voce testou?
+
+    npm run verificar na raiz e em api/, npx vite build, chamadas reais
+    na API e testes do CRUD no MySQL. Ainda nao ha testes automatizados.
+
+12. O que falta para o projeto?
+
+    Login real (Aula 5), leitura de generos (Aula 6), testes automatizados,
+    modal de edicao, confirmacao antes de remover e deploy.
+
+======================================================================
+7. COLA FINAL
+======================================================================
+
+URLS
+
+- Pagina: http://localhost:5173
+- API: http://localhost:3000/api/titulos
+- Titulo 3: http://localhost:3000/api/titulos/3
+- Titulo 7: http://localhost:3000/api/titulos/7 (404)
+
+COMANDOS
+
+- Banco: C:\Users\Gabriel\xampp\mysql_start.bat
+- API: cd api && npm run dev
+- Pagina: npm run dev
+- Tipos: npm run verificar
+- Build: npx vite build
+
+NUMEROS
+
+- Banco: cineanchieta
+- Tabelas: 4
+- Usuarios: 2 (Ana e Bruno)
+- Titulos: 7 no banco; 6 da Ana na tela
+- Generos: 8; ligacoes: 14
+- Status da Ana: 2 quero ver, 2 assistindo, 2 assistidos
+- Portas: 3306, 3000 e 5173
+- Versao: 0.4.0
+- Commit: f9fd190
+
+FRASES DE EMERGENCIA
+
+- "Nao implementei isso ainda; o proximo passo seria..."
+- "Essa decisao foi para manter o escopo da Aula 4."
+- "Os generos existem no banco, mas a leitura fica para a Aula 6."
+- "O 404 e proposital para nao revelar titulos de outra pessoa."
+- "A validacao principal e no servidor."
+
+======================================================================
+FIM
+======================================================================
