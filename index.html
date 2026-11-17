@@ -9,7 +9,16 @@
   <body>
     <header class="cabecalho">
       <div class="cabecalho__conteudo">
-        <p class="cabecalho__eyebrow">Sua estante de filmes e séries</p>
+        <div class="cabecalho__topo">
+          <p class="cabecalho__eyebrow">Sua estante de filmes e séries</p>
+          <!-- Aula 5: nome de quem entrou e botão para sair -->
+          <div class="cabecalho__acoes" id="acoes-usuario" hidden>
+            <span class="cabecalho__usuario" id="usuario-nome"></span>
+            <button class="botao botao--pequeno botao--neutro" id="botao-sair" type="button">
+              Sair
+            </button>
+          </div>
+        </div>
         <h1 class="cabecalho__titulo"><span id="nome-do-sistema">—</span></h1>
         <p class="cabecalho__subtitulo">
           <span id="versao">—</span> · <span id="data-de-hoje">—</span>
@@ -17,7 +26,81 @@
       </div>
     </header>
 
-    <main class="conteudo">
+    <!-- Aula 5: a página abre na entrada; o sistema só aparece depois do login -->
+    <section class="entrada" id="tela-entrada" aria-label="Entrar no CineAnchieta">
+      <form class="formulario" id="form-entrar">
+        <h2>Entrar</h2>
+        <div class="campo">
+          <label class="campo__rotulo" for="entrar-email">E-mail</label>
+          <input
+            class="campo__entrada"
+            id="entrar-email"
+            type="email"
+            autocomplete="username"
+            maxlength="150"
+            required
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="entrar-senha">Senha</label>
+          <input
+            class="campo__entrada"
+            id="entrar-senha"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button class="botao botao--primario" type="submit">Entrar</button>
+      </form>
+
+      <form class="formulario" id="form-criar" hidden>
+        <h2>Criar conta</h2>
+        <div class="campo">
+          <label class="campo__rotulo" for="criar-nome">Nome</label>
+          <input
+            class="campo__entrada"
+            id="criar-nome"
+            type="text"
+            autocomplete="name"
+            maxlength="100"
+            required
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="criar-email">E-mail</label>
+          <input
+            class="campo__entrada"
+            id="criar-email"
+            type="email"
+            autocomplete="email"
+            maxlength="150"
+            required
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="criar-senha">Senha (6 caracteres ou mais)</label>
+          <input
+            class="campo__entrada"
+            id="criar-senha"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            maxlength="72"
+            required
+          />
+        </div>
+        <button class="botao botao--primario" type="submit">Criar conta</button>
+      </form>
+
+      <button class="botao botao--pequeno botao--neutro entrada__alternar" id="alternar-entrada" type="button">
+        Ainda não tenho conta
+      </button>
+      <p class="campo__erro" id="erro-entrada" role="alert"></p>
+    </section>
+
+    <!-- Todo o resto da página (painel, formulário e lista) fica aqui dentro -->
+    <main class="conteudo" id="tela-app" hidden>
       <section class="painel" aria-label="Resumo da lista">
         <div class="estatistica">
           <span class="estatistica__numero" id="total">0</span>

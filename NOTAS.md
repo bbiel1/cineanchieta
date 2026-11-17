@@ -40,4 +40,19 @@
 - Painel agora mostra total, quero ver, assistindo e assistidos.
 - Versão atualizada para `v0.4.0`.
 
-> Na Aula 5 o dono fixo some: o `usuario_id` passa a ser quem fez login. Na Aula 6 os gêneros saem de `titulo_genero`.
+# Aula 4 → Aula 5
+
+- `USUARIO_FIXO` removido: o dono de cada título passa a ser quem fez login.
+- Cadastro em `POST /api/usuarios`: a senha vira hash bcrypt (custo 10) antes de ir ao banco; e-mail repetido responde 409.
+- Login em `POST /api/login`: `bcrypt.compare` confere a senha e a API assina um JWT de 8 horas com o id do usuário.
+- `api/src/autenticacao.ts` com `exigirLogin` (middleware) e `usuarioDe(res)`; toda rota de título exige `Authorization: Bearer <token>`.
+- `GET /api/eu` (Prata) devolve só `id`, `nome` e `email`; o hash nunca sai do banco.
+- Todas as consultas de títulos filtram por `usuario_id = ?`, com o id vindo do token — nunca do corpo do pedido.
+- `PUT` e `DELETE` que não encontram o título do dono respondem 404: o Bruno não apaga o #3 da Ana, e vice-versa.
+- `src/api.ts` guarda a sessão em `localStorage` (`cineanchieta:sessao`) e manda o token em todas as chamadas; um 401 apaga a sessão e volta para a entrada.
+- `main.ts` ganhou a tela de entrada (Entrar/Criar conta), o nome no cabeçalho vindo de `/api/eu` e o botão **Sair**.
+- `index.html` e o CSS ganharam a tela de entrada, as ações do usuário e a regra `[hidden]`.
+- Hashes de exemplo do `script.sql` corrigidos para casar com a senha `senha123`.
+- Versão atualizada para `v0.5.0`; `api/package.json` em `0.5.0`, com `bcryptjs` e `jsonwebtoken`.
+
+> Na Aula 6 os gêneros saem de `titulo_genero` e passam a vir do banco em cada título.

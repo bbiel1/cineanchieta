@@ -1,17 +1,52 @@
-import type { NovoTitulo, Status, Titulo } from "./tipos";
+import type { NovoTitulo, Sessao, Status, Titulo, Usuario } from "./tipos";
 
-// A ajudante que todas as chamadas usam: monta o pedido e trata o erro.
+const CHAVE_SESSAO = "cineanchieta:sessao";
+
+// ---------- A sessão: o "crachá" guardado no navegador ----------
+
+export function sessaoAtual(): Sessao | undefined {
+  const texto = localStorage.getItem(CHAVE_SESSAO);
+  return texto ? (JSON.parse(texto) as Sessao) : undefined;
+}
+
+export function guardarSessao(sessao: Sessao): void {
+  localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao));
+}
+
+export function encerrarSessao(): void {
+  localStorage.removeItem(CHAVE_SESSAO);
+}
+
+// A ajudante que todas as chamadas usam: monta o pedido, mostra o crachá
+// e trata o erro. Sem o Authorization, a API responde 401.
 async function enviar(metodo: string, url: string, corpo?: unknown): Promise<Response> {
+  const sessao = sessaoAtual();
   const resposta = await fetch(url, {
     method: metodo,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(sessao ? { Authorization: `Bearer ${sessao.token}` } : {}),
+    },
     body: corpo === undefined ? undefined : JSON.stringify(corpo),
   });
+
+  // Crachá vencido ou inválido: apaga a sessão e volta para a entrada.
+  if (resposta.status === 401 && sessao) {
+    encerrarSessao();
+    location.reload();
+  }
 
   if (!resposta.ok) {
     // a API manda { erro: "..." }; se não mandar, usamos o código
     const dados = (await resposta.json().catch(() => ({}))) as { erro?: string };
-    throw new Error(dados.erro ?? `Erro ${resposta.status}`);
+    // 502/504: o proxy do Vite não achou a API na porta 3000
+    const semApi = resposta.status === 502 || resposta.status === 504;
+    throw new Error(
+      dados.erro ??
+        (semApi
+          ? "A API não respondeu. Rode npm run dev na pasta api."
+          : `Erro ${resposta.status}`)
+    );
   }
   return resposta;
 }
@@ -21,7 +56,26 @@ function converter(titulo: Titulo): Titulo {
   return { ...titulo, adicionadoEm: new Date(titulo.adicionadoEm) };
 }
 
-// Todos os títulos da Ana que estão no banco
+// ---------- Usuários ----------
+
+export async function entrar(email: string, senha: string): Promise<Sessao> {
+  const resposta = await enviar("POST", "/api/login", { email, senha });
+  return (await resposta.json()) as Sessao;
+}
+
+export async function criarConta(nome: string, email: string, senha: string): Promise<void> {
+  await enviar("POST", "/api/usuarios", { nome, email, senha });
+}
+
+// Prata: o nome do cabeçalho vem daqui, não do que ficou guardado na sessão.
+export async function buscarEu(): Promise<Usuario> {
+  const resposta = await enviar("GET", "/api/eu");
+  return (await resposta.json()) as Usuario;
+}
+
+// ---------- Títulos ----------
+
+// Todos os títulos do usuário logado que estão no banco
 export async function listarTitulos(): Promise<Titulo[]> {
   const resposta = await enviar("GET", "/api/titulos");
   const bruto = (await resposta.json()) as Titulo[];
@@ -30,16 +84,17 @@ export async function listarTitulos(): Promise<Titulo[]> {
 
 // Um título: devolve undefined se ele não existir (ou for de outra pessoa)
 export async function buscarTitulo(id: number): Promise<Titulo | undefined> {
-  const resposta = await fetch(`/api/titulos/${id}`);
-  if (resposta.status === 404) {
-    return undefined;
+  try {
+    const resposta = await enviar("GET", `/api/titulos/${id}`);
+    const bruto = (await resposta.json()) as Titulo;
+    return converter(bruto);
+  } catch (erro) {
+    // A API responde 404 com "Título #... não encontrado."
+    if (erro instanceof Error && erro.message.includes("não encontrado")) {
+      return undefined;
+    }
+    throw erro;
   }
-  if (!resposta.ok) {
-    const dados = (await resposta.json().catch(() => ({}))) as { erro?: string };
-    throw new Error(dados.erro ?? `Erro ${resposta.status} ao buscar o título #${id}.`);
-  }
-  const bruto = (await resposta.json()) as Titulo;
-  return converter(bruto);
 }
 
 // Cadastra no banco e devolve o título com o id que o AUTO_INCREMENT criou

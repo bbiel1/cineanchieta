@@ -1,5 +1,5 @@
 -- ============================================================
--- CineAnchieta — banco de dados da Aula 2
+-- CineAnchieta — banco de dados do projeto (Aulas 2 a 5)
 -- MySQL 8+
 --
 -- Execute este arquivo inteiro no MySQL Workbench:
@@ -81,8 +81,8 @@ CREATE TABLE titulo_genero (
 -- Usuários: Ana e Bruno — senha: senha123 (guardada só como hash)
 -- ============================================================
 INSERT INTO usuarios (nome, email, senha_hash) VALUES
-  ('Ana Souza',  'ana@cineanchieta.com',   '$2b$10$qegHupoqt2oGJtZr.Dts8uh8gtqoAnx5eiFdzoNcY4YaiSwAGTWgK'),
-  ('Bruno Lima', 'bruno@cineanchieta.com', '$2b$10$qegHupoqt2oGJtZr.Dts8uh8gtqoAnx5eiFdzoNcY4YaiSwAGTWgK');
+  ('Ana Souza',  'ana@cineanchieta.com',   '$2b$10$QaEbmv/QTYg7Vvr5.hRB3uGxGr7PvP8V7/fdZTLE99F9kV2.S.IcO'),
+  ('Bruno Lima', 'bruno@cineanchieta.com', '$2b$10$J5HDizyMLUrrZ6pG.otio.W5pBC8yg5Bisf6QbJyvedH6aoRa5e7.');
 
 -- 6 títulos da Ana (os mesmos do dados.ts da Aula 1) + 1 do Bruno
 INSERT INTO titulos

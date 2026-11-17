@@ -1,6 +1,19 @@
 export type Status = "quero_ver" | "assistindo" | "assisti";
 export type Formato = "filme" | "serie";
 
+// Aula 5: o que a API devolve no login e guardamos no navegador.
+export interface Sessao {
+  token: string;
+  nome: string;
+}
+
+// O que a rota protegida GET /api/eu devolve. Não tem senha nem hash.
+export interface Usuario {
+  id: number;
+  nome: string;
+  email: string;
+}
+
 export interface Titulo {
   readonly id: number;
   titulo: string;

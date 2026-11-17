@@ -16,3 +16,16 @@ export interface DadosTitulo {
   lancamento?: string | null;
   // generos?: string[]; // entram na Aula 6, junto com titulo_genero
 }
+
+// Aula 5: cadastro e login. A senha chega em texto uma única vez e vira
+// hash antes de ser gravada; ela nunca é devolvida pela API.
+export interface DadosCadastro {
+  nome?: string;
+  email?: string;
+  senha?: string;
+}
+
+export interface DadosLogin {
+  email?: string;
+  senha?: string;
+}

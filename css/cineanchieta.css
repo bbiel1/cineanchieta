@@ -15,6 +15,11 @@
   box-sizing: border-box;
 }
 
+/* O atributo hidden precisa vencer os display: grid/flex dos componentes */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -36,13 +41,34 @@ body {
   padding: 48px 24px 32px;
 }
 
+.cabecalho__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
 .cabecalho__eyebrow {
-  margin: 0 0 10px;
+  margin: 0;
   color: var(--azul);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.cabecalho__acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cabecalho__usuario {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .cabecalho__titulo {
@@ -68,6 +94,39 @@ body {
   max-width: 860px;
   margin: 0 auto;
   padding: 32px 24px 64px;
+}
+
+/* Aula 5: a tela de entrada fica centralizada, com um formulário por vez */
+.entrada {
+  max-width: 440px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+
+.entrada .formulario {
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 0;
+  padding: 24px;
+}
+
+.entrada .formulario h2 {
+  margin: 0 0 4px;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+.entrada .formulario .botao {
+  width: 100%;
+}
+
+.entrada__alternar {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.entrada .campo__erro {
+  margin: 12px 0 0;
 }
 
 .painel {
@@ -385,6 +444,19 @@ body {
 @media (max-width: 620px) {
   .cabecalho__conteudo {
     padding-top: 36px;
+  }
+
+  .cabecalho__topo {
+    align-items: flex-start;
+  }
+
+  .cabecalho__acoes {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .entrada {
+    margin-top: 28px;
   }
 
   .painel {

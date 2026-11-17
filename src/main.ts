@@ -1,17 +1,23 @@
 import { campo, elemento, selecao } from "./dom";
 import {
   alterarStatus,
+  buscarEu,
   buscarTitulo,
   cadastrarTitulo,
+  criarConta,
   editarTitulo,
+  encerrarSessao,
+  entrar,
+  guardarSessao,
   listarTitulos,
   removerTitulo,
+  sessaoAtual,
 } from "./api";
 import type { Formato, Status, Titulo } from "./tipos";
 
 // ---------- Cabeçalho ----------
 elemento("nome-do-sistema").textContent = "CineAnchieta";
-elemento("versao").textContent = "v0.4.0";
+elemento("versao").textContent = "v0.5.0";
 elemento("data-de-hoje").textContent = new Date().toLocaleDateString("pt-BR");
 
 // O estado do programa: a lista que está valendo agora.
@@ -242,21 +248,110 @@ function avisarApiForaDoAr(mensagem: string): void {
   aviso.hidden = false;
 }
 
-// O começo do programa: busca no banco, depois desenha
-async function iniciar(): Promise<void> {
+// ---------- A tela de entrada (Aula 5) ----------
+
+function mostrarErroEntrada(erro: unknown): void {
+  if (erro instanceof TypeError) {
+    elemento("erro-entrada").textContent =
+      "Não foi possível falar com a API. Verifique se ela está rodando.";
+    return;
+  }
+  elemento("erro-entrada").textContent = erro instanceof Error ? erro.message : "Erro inesperado.";
+}
+
+// Troca entre "Entrar" e "Criar conta"
+function mostrarFormulario(criando: boolean): void {
+  const formCriar = elemento("form-criar") as HTMLFormElement;
+  const formEntrar = elemento("form-entrar") as HTMLFormElement;
+
+  formCriar.hidden = !criando;
+  formEntrar.hidden = criando;
+  elemento("alternar-entrada").textContent = criando ? "Já tenho conta" : "Ainda não tenho conta";
+  elemento("erro-entrada").textContent = "";
+}
+
+elemento("alternar-entrada").addEventListener("click", () => {
+  mostrarFormulario(elemento("form-criar").hidden === true); // escondido? então mostra
+});
+
+elemento("form-entrar").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  elemento("erro-entrada").textContent = "";
+
   try {
+    guardarSessao(await entrar(campo("entrar-email").value.trim(), campo("entrar-senha").value));
+    campo("entrar-senha").value = ""; // a senha não fica no campo
+    await iniciar();
+  } catch (erro) {
+    mostrarErroEntrada(erro);
+  }
+});
+
+elemento("form-criar").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  elemento("erro-entrada").textContent = "";
+
+  const email = campo("criar-email").value.trim();
+  const senha = campo("criar-senha").value;
+
+  try {
+    await criarConta(campo("criar-nome").value.trim(), email, senha);
+    guardarSessao(await entrar(email, senha)); // criou? já entra direto
+    (elemento("form-criar") as HTMLFormElement).reset(); // não deixa a senha no campo
+    await iniciar();
+  } catch (erro) {
+    mostrarErroEntrada(erro);
+  }
+});
+
+elemento("botao-sair").addEventListener("click", () => {
+  encerrarSessao();
+  lista = [];
+  (elemento("form-entrar") as HTMLFormElement).reset();
+  (elemento("form-criar") as HTMLFormElement).reset();
+  elemento("erro").textContent = "";
+  elemento("erro-entrada").textContent = "";
+  elemento("aviso-api").hidden = true;
+  elemento("usuario-nome").textContent = "";
+  mostrarFormulario(false); // volta sempre para "Entrar"
+  void iniciar();
+});
+
+// O começo do programa: com sessão, mostra o sistema; sem sessão, a entrada.
+async function iniciar(): Promise<void> {
+  const sessao = sessaoAtual();
+
+  elemento("tela-entrada").hidden = sessao !== undefined;
+  elemento("tela-app").hidden = sessao === undefined;
+  elemento("acoes-usuario").hidden = sessao === undefined;
+  elemento("usuario-nome").textContent = "";
+
+  if (!sessao) {
+    return;
+  }
+
+  elemento("erro-entrada").textContent = "";
+  elemento("aviso-api").hidden = true;
+
+  try {
+    // Prata: o nome mostrado vem da API, não do nome guardado na sessão.
+    const eu = await buscarEu();
+    elemento("usuario-nome").textContent = eu.nome;
+
     lista = await listarTitulos();
     desenhar();
   } catch (falha) {
-    if (falha instanceof Error) {
+    if (falha instanceof TypeError) {
       avisarApiForaDoAr(
         "Não foi possível carregar os títulos. Verifique se a API está rodando e recarregue a página."
       );
+    } else {
+      mostrarErro(falha);
     }
     return;
   }
 
-  // find no banco: pode não encontrar
+  // find no banco: pode não encontrar (para o Bruno, o #3 é da Ana)
   await mostrarTitulo(3);
 }
 

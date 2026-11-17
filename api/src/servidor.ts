@@ -1,15 +1,21 @@
 import "dotenv/config"; // primeira linha: carrega o .env antes de tudo
+import bcrypt from "bcryptjs";
 import express, { type NextFunction, type Request, type Response } from "express";
+import jwt from "jsonwebtoken";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { exigirLogin, SEGREDO, usuarioDe } from "./autenticacao";
 import { banco } from "./banco";
-import { FORMATOS, STATUS, type DadosTitulo, type Status } from "./tipos";
+import {
+  FORMATOS,
+  STATUS,
+  type DadosCadastro,
+  type DadosLogin,
+  type DadosTitulo,
+  type Status,
+} from "./tipos";
 
 const app = express();
 app.use(express.json());
-
-// Aula 4: a API tem uma dona fixa, a Ana. Na Aula 5 o dono passa a ser
-// quem fez login; por isso, todo SELECT, UPDATE e DELETE filtra por ela.
-const USUARIO_FIXO = 1;
 
 // O SELECT que as rotas usam. Os "AS" trocam o nome da coluna do jeito
 // do banco (adicionado_em) para o jeito do TypeScript (adicionadoEm).
@@ -19,11 +25,12 @@ const SELECT_TITULOS = `
          adicionado_em AS adicionadoEm
     FROM titulos`;
 
-// Busca um título da Ana pelo id. Usada pelo GET e depois de cada escrita.
-async function buscarUm(id: number): Promise<RowDataPacket | undefined> {
+// Busca um título do usuário logado pelo id. Usada pelo GET e depois de
+// cada escrita. O usuarioId vem do token, nunca da página.
+async function buscarUm(id: number, usuarioId: number): Promise<RowDataPacket | undefined> {
   const [linhas] = await banco.execute<RowDataPacket[]>(
     `${SELECT_TITULOS} WHERE id = ? AND usuario_id = ?`,
-    [id, USUARIO_FIXO]
+    [id, usuarioId]
   );
   return linhas.length > 0 ? { ...linhas[0], generos: [] } : undefined;
 }
@@ -62,36 +69,125 @@ function dataValida(valor: string): boolean {
 }
 
 // Os ids chegam como texto na URL; se não forem inteiros, o título
-// simplesmente não existe para a API.
-function lerId(valor: string): number | undefined {
-  const id = Number(valor);
+// simplesmente não existe para a API. O Express 5 pode tipar o parâmetro
+// como string ou string[]; usamos sempre a primeira parte.
+function textoDoParametro(valor: string | string[] | undefined): string {
+  if (Array.isArray(valor)) {
+    return valor[0] ?? "";
+  }
+  return valor ?? "";
+}
+
+function lerId(valor: string | string[] | undefined): number | undefined {
+  const id = Number(textoDoParametro(valor));
   return Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
-function naoEncontrado(res: Response, idTexto: string): void {
-  res.status(404).json({ erro: `Título #${idTexto} não encontrado.` });
+function naoEncontrado(res: Response, idTexto: string | string[] | undefined): void {
+  res.status(404).json({ erro: `Título #${textoDoParametro(idTexto)} não encontrado.` });
 }
+
+// ---------- USUÁRIOS E LOGIN (Aula 5) ----------
+
+// Cadastro: a senha vira hash antes de chegar ao banco. O UNIQUE do banco
+// é quem descobre e-mail repetido; a API só traduz o erro para 409.
+app.post("/api/usuarios", async (req, res) => {
+  const { nome, email, senha } = (req.body ?? {}) as DadosCadastro;
+  const nomeLimpo = typeof nome === "string" ? nome.trim() : "";
+  const emailLimpo = typeof email === "string" ? email.trim().toLowerCase() : "";
+  const senhaTexto = typeof senha === "string" ? senha : "";
+
+  if (
+    !nomeLimpo ||
+    nomeLimpo.length > 100 ||
+    !emailLimpo.includes("@") ||
+    emailLimpo.length > 150 ||
+    senhaTexto.length < 6 ||
+    senhaTexto.length > 72
+  ) {
+    res.status(400).json({
+      erro: "Preencha nome, e-mail válido e senha de 6 a 72 caracteres.",
+    });
+    return;
+  }
+
+  const hash = await bcrypt.hash(senhaTexto, 10); // a senha nunca vai para o banco
+
+  try {
+    const [resultado] = await banco.execute<ResultSetHeader>(
+      "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)",
+      [nomeLimpo, emailLimpo, hash]
+    );
+    res.status(201).json({ id: resultado.insertId });
+  } catch (erro) {
+    if ((erro as { code?: string }).code === "ER_DUP_ENTRY") {
+      res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+      return;
+    }
+    throw erro;
+  }
+});
+
+// Login: confere o hash e entrega um token assinado, válido por 8 horas.
+// E-mail inexistente e senha errada dão a mesma resposta: assim ninguém
+// descobre quais e-mails têm conta.
+app.post("/api/login", async (req, res) => {
+  const { email, senha } = (req.body ?? {}) as DadosLogin;
+  const emailLimpo = typeof email === "string" ? email.trim().toLowerCase() : "";
+  const senhaTexto = typeof senha === "string" ? senha : "";
+
+  const [linhas] = await banco.execute<RowDataPacket[]>(
+    "SELECT id, nome, senha_hash FROM usuarios WHERE email = ?",
+    [emailLimpo]
+  );
+  const usuario = linhas[0];
+
+  if (!usuario || !senhaTexto || !(await bcrypt.compare(senhaTexto, usuario.senha_hash))) {
+    res.status(401).json({ erro: "E-mail ou senha inválidos." });
+    return;
+  }
+
+  const token = jwt.sign({ id: usuario.id }, SEGREDO, { expiresIn: "8h" });
+  res.json({ token, nome: usuario.nome });
+});
+
+// Prata: devolve quem está logado. O SELECT não pede senha_hash, então
+// o hash nunca sai do banco.
+app.get("/api/eu", exigirLogin, async (_req, res) => {
+  const [linhas] = await banco.execute<RowDataPacket[]>(
+    "SELECT id, nome, email FROM usuarios WHERE id = ?",
+    [usuarioDe(res)]
+  );
+  const usuario = linhas[0];
+
+  if (!usuario) {
+    res.status(401).json({ erro: "Sessão inválida. Entre de novo." });
+    return;
+  }
+
+  res.json({ id: usuario.id, nome: usuario.nome, email: usuario.email });
+});
 
 // ---------- LER ----------
 
-// Todos os títulos da Ana
-app.get("/api/titulos", async (_req, res) => {
+// Todos os títulos do usuário logado
+app.get("/api/titulos", exigirLogin, async (_req, res) => {
   const [linhas] = await banco.execute<RowDataPacket[]>(
     `${SELECT_TITULOS} WHERE usuario_id = ? ORDER BY id`,
-    [USUARIO_FIXO]
+    [usuarioDe(res)]
   );
   // os gêneros chegam na Aula 6; por enquanto, uma lista vazia em cada título
   res.json(linhas.map((linha) => ({ ...linha, generos: [] })));
 });
 
-// Um título: pode não existir (ou ser de outra pessoa)
-app.get("/api/titulos/:id", async (req, res) => {
+// Um título: pode não existir ou ser de outra pessoa
+app.get("/api/titulos/:id", exigirLogin, async (req, res) => {
   const id = lerId(req.params.id);
   if (id === undefined) {
     naoEncontrado(res, req.params.id);
     return;
   }
-  const titulo = await buscarUm(id);
+  const titulo = await buscarUm(id, usuarioDe(res));
   if (!titulo) {
     naoEncontrado(res, req.params.id);
     return;
@@ -101,7 +197,7 @@ app.get("/api/titulos/:id", async (req, res) => {
 
 // ---------- CRIAR ----------
 
-app.post("/api/titulos", async (req, res) => {
+app.post("/api/titulos", exigirLogin, async (req, res) => {
   const dados = (req.body ?? {}) as DadosTitulo;
   const problema = validar(dados);
   if (problema) {
@@ -114,7 +210,7 @@ app.post("/api/titulos", async (req, res) => {
     `INSERT INTO titulos (usuario_id, titulo, descricao, formato, lancamento)
      VALUES (?, ?, ?, ?, ?)`,
     [
-      USUARIO_FIXO,
+      usuarioDe(res),
       dados.titulo!.trim(),
       dados.descricao ?? null,
       dados.formato ?? "filme",
@@ -123,12 +219,12 @@ app.post("/api/titulos", async (req, res) => {
   );
 
   // 201: criado. Devolve o título como o banco o guardou (id e datas).
-  res.status(201).json(await buscarUm(resultado.insertId));
+  res.status(201).json(await buscarUm(resultado.insertId, usuarioDe(res)));
 });
 
 // ---------- ATUALIZAR (só o status) ----------
 
-app.patch("/api/titulos/:id/status", async (req, res) => {
+app.patch("/api/titulos/:id/status", exigirLogin, async (req, res) => {
   const { status } = (req.body ?? {}) as { status?: Status };
   if (!status || !STATUS.includes(status)) {
     res.status(400).json({ erro: "Status inválido." });
@@ -141,11 +237,12 @@ app.patch("/api/titulos/:id/status", async (req, res) => {
     return;
   }
 
+  // O WHERE tem id E usuario_id: saber o id de outra pessoa não basta.
   const [resultado] = await banco.execute<ResultSetHeader>(
     `UPDATE titulos
         SET status = ?, assistido_em = IF(? = 'assisti', NOW(), NULL)
       WHERE id = ? AND usuario_id = ?`,
-    [status, status, id, USUARIO_FIXO]
+    [status, status, id, usuarioDe(res)]
   );
 
   if (resultado.affectedRows === 0) {
@@ -157,7 +254,7 @@ app.patch("/api/titulos/:id/status", async (req, res) => {
 
 // ---------- EDITAR (Prata: só o título) ----------
 
-app.put("/api/titulos/:id", async (req, res) => {
+app.put("/api/titulos/:id", exigirLogin, async (req, res) => {
   const { titulo } = (req.body ?? {}) as { titulo?: string };
   if (
     titulo !== undefined &&
@@ -178,28 +275,30 @@ app.put("/api/titulos/:id", async (req, res) => {
     `UPDATE titulos
         SET titulo = COALESCE(?, titulo)
       WHERE id = ? AND usuario_id = ?`,
-    [titulo?.trim() ?? null, id, USUARIO_FIXO]
+    [titulo?.trim() ?? null, id, usuarioDe(res)]
   );
 
   if (resultado.affectedRows === 0) {
     naoEncontrado(res, req.params.id);
     return;
   }
-  res.json(await buscarUm(id));
+  res.json(await buscarUm(id, usuarioDe(res)));
 });
 
 // ---------- APAGAR ----------
 
-app.delete("/api/titulos/:id", async (req, res) => {
+app.delete("/api/titulos/:id", exigirLogin, async (req, res) => {
   const id = lerId(req.params.id);
   if (id === undefined) {
     naoEncontrado(res, req.params.id);
     return;
   }
 
+  // Ouro: o WHERE id = ? AND usuario_id = ? é o que impede o usuário A
+  // de apagar o título do usuário B, mesmo sabendo o id.
   const [resultado] = await banco.execute<ResultSetHeader>(
     "DELETE FROM titulos WHERE id = ? AND usuario_id = ?",
-    [id, USUARIO_FIXO]
+    [id, usuarioDe(res)]
   );
 
   if (resultado.affectedRows === 0) {

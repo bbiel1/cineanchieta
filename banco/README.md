@@ -1,6 +1,6 @@
 # Banco de dados — CineAnchieta
 
-Banco do projeto do grupo, criado na Aula 2 e usado pela API a partir da Aula 3: **`cineanchieta`**. A partir da Aula 4, a API também grava, atualiza e remove títulos.
+Banco do projeto do grupo, criado na Aula 2 e usado pela API a partir da Aula 3: **`cineanchieta`**. A partir da Aula 4, a API também grava, atualiza e remove títulos. Na Aula 5, o dono de cada título passa a ser quem fez login, e a senha fica guardada só como hash bcrypt.
 
 O script principal é o [`script.sql`](script.sql). Ele **recria o banco do zero** (tem um `DROP DATABASE`), então rode-o apenas quando quiser resetar os dados.
 
@@ -143,6 +143,36 @@ WHERE id = 1;
 ```
 
 O `UPDATE` e o `DELETE` da API filtram por `id` **e** `usuario_id`. Por isso, tentar mexer no título #7 (do Bruno) devolve **404**, mesmo ele existindo no banco.
+
+## Conferência da Aula 5
+
+O login não compara senha em SQL. A API busca o hash pelo e-mail, confere com `bcrypt.compare` e assina um JWT com o id do usuário. Nas rotas de títulos, o `usuario_id` vem desse token:
+
+```sql
+USE cineanchieta;
+
+-- Duas contas; o hash bcrypt tem 60 caracteres e nunca é devolvido pela API
+SELECT id, nome, email, CHAR_LENGTH(senha_hash) AS tamanho_hash
+FROM usuarios;
+
+-- Cada título pertence a quem o criou
+SELECT u.nome AS dono, t.id, t.titulo, t.status
+FROM titulos AS t
+JOIN usuarios AS u ON u.id = t.usuario_id
+ORDER BY t.id;
+```
+
+Para conferir o isolamento, tente apagar o título #3 com o token do Bruno:
+
+```sql
+-- O que a API executa no DELETE; com usuario_id = 2, afeta 0 linhas
+DELETE FROM titulos WHERE id = 3 AND usuario_id = 2;
+
+-- O título continua com a Ana
+SELECT id, usuario_id, titulo FROM titulos WHERE id = 3;
+```
+
+Como nenhuma linha casa com `id = 3 AND usuario_id = 2`, o `DELETE` afeta **0 linhas** e a API responde **404** — igual a um título que não existe. O mesmo filtro aparece no `SELECT`, no `UPDATE` e no `PATCH`.
 
 ## Conferência realizada
 
