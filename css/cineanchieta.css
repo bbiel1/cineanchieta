@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --fundo: #0b0f19;
   --fundo-card: #151d2e;
   --borda: #243049;
@@ -71,7 +72,7 @@ body {
 
 .painel {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -102,7 +103,7 @@ body {
 
 .formulario {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 10px;
@@ -169,6 +170,41 @@ body {
 .botao--primario:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 28px rgba(59, 130, 246, 0.36);
+}
+
+.botao--pequeno {
+  padding: 7px 12px;
+  font-size: 0.8rem;
+}
+
+.botao--sucesso {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+}
+
+.botao--sucesso:hover {
+  background: rgba(52, 211, 153, 0.24);
+}
+
+.botao--perigo {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+}
+
+.botao--perigo:hover {
+  background: rgba(248, 113, 113, 0.22);
+}
+
+.botao--neutro {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+}
+
+.botao--neutro:hover {
+  background: rgba(148, 163, 184, 0.2);
 }
 
 .campo__erro {
@@ -244,6 +280,29 @@ body {
   --cor-status: var(--verde);
 }
 
+.titulo--concluido .titulo__nome {
+  color: var(--texto-suave);
+  text-decoration: line-through;
+}
+
+.titulo--em-breve {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.12), var(--sombra);
+}
+
+.titulo__principal {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.titulo__acoes {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .titulo__nome {
   margin: 0;
   font-size: 1.05rem;
@@ -301,13 +360,35 @@ body {
   color: #cbd5e1;
 }
 
+.etiqueta--lancamento {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+}
+
+.etiqueta--em-breve {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fcd34d;
+}
+
+@media (max-width: 760px) {
+  .formulario {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formulario .botao {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 620px) {
   .cabecalho__conteudo {
     padding-top: 36px;
   }
 
   .painel {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .formulario {
@@ -320,6 +401,15 @@ body {
 
   .titulo {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+
+  .titulo__acoes {
+    width: 100%;
+  }
+
+  .titulo__acoes .botao {
+    flex: 1 1 120px;
+    width: auto;
   }
 }

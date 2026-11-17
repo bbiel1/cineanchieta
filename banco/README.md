@@ -1,6 +1,6 @@
 # Banco de dados — CineAnchieta
 
-Banco do projeto do grupo, criado na Aula 2 e lido pela API a partir da Aula 3: **`cineanchieta`**.
+Banco do projeto do grupo, criado na Aula 2 e usado pela API a partir da Aula 3: **`cineanchieta`**. A partir da Aula 4, a API também grava, atualiza e remove títulos.
 
 O script principal é o [`script.sql`](script.sql). Ele **recria o banco do zero** (tem um `DROP DATABASE`), então rode-o apenas quando quiser resetar os dados.
 
@@ -122,6 +122,27 @@ ORDER BY t.id, g.nome;
 ```
 
 Os usuários de exemplo são **Ana** e **Bruno**, ambos com a senha `senha123`. O banco guarda apenas o hash bcrypt.
+
+## Conferência da Aula 4
+
+Depois de usar os botões da página (ou as rotas da API), confira no Workbench:
+
+```sql
+USE cineanchieta;
+
+-- A lista da Ana: 6 títulos; o #7 é do Bruno e a API não deve mexer nele
+SELECT id, titulo, status, assistido_em
+FROM titulos
+WHERE usuario_id = 1
+ORDER BY id;
+
+-- Concluir preenche assistido_em; reabrir apaga a data
+SELECT id, titulo, status, assistido_em
+FROM titulos
+WHERE id = 1;
+```
+
+O `UPDATE` e o `DELETE` da API filtram por `id` **e** `usuario_id`. Por isso, tentar mexer no título #7 (do Bruno) devolve **404**, mesmo ele existindo no banco.
 
 ## Conferência realizada
 

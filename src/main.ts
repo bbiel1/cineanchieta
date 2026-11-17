@@ -1,21 +1,73 @@
 import { campo, elemento, selecao } from "./dom";
-import { buscarTitulo, listarTitulos } from "./api";
-import type { Formato, Titulo } from "./tipos";
-import { adicionarTitulo } from "./servicos";
+import {
+  alterarStatus,
+  buscarTitulo,
+  cadastrarTitulo,
+  editarTitulo,
+  listarTitulos,
+  removerTitulo,
+} from "./api";
+import type { Formato, Status, Titulo } from "./tipos";
 
 // ---------- Cabeçalho ----------
 elemento("nome-do-sistema").textContent = "CineAnchieta";
-elemento("versao").textContent = "v0.3.0";
+elemento("versao").textContent = "v0.4.0";
 elemento("data-de-hoje").textContent = new Date().toLocaleDateString("pt-BR");
 
 // O estado do programa: a lista que está valendo agora.
 // Começa vazia: quem preenche é a API (por isso é let, não const).
 let lista: Titulo[] = [];
 
+// Mensagens de erro das ações (a API é quem decide se o pedido está certo)
+function mostrarErro(erro: unknown): void {
+  if (erro instanceof TypeError) {
+    elemento("erro").textContent =
+      "Não foi possível falar com a API. Verifique se ela está rodando.";
+    return;
+  }
+  elemento("erro").textContent = erro instanceof Error ? erro.message : "Erro inesperado.";
+}
+
+// Uma ajudante para criar botões sem repetir código
+function botao(texto: string, extra: string, aoClicar: () => void): HTMLButtonElement {
+  const elementoBotao = document.createElement("button");
+  elementoBotao.type = "button";
+  elementoBotao.className = ["botao", "botao--pequeno", extra].filter(Boolean).join(" ");
+  elementoBotao.textContent = texto;
+  elementoBotao.addEventListener("click", aoClicar); // callback, de novo
+  return elementoBotao;
+}
+
+// Data AAAA-MM-DD -> DD/MM/AAAA sem passar por fuso horário
+function formatarData(iso: string): string {
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+// O dia de hoje no mesmo formato do banco, para comparar com lancamento
+function hojeIso(): string {
+  const hoje = new Date();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  return `${hoje.getFullYear()}-${mes}-${dia}`;
+}
+
 // Um título vira um <li> pronto para a tela
 function criarItem(titulo: Titulo): HTMLLIElement {
   const item = document.createElement("li");
   item.className = `titulo titulo--${titulo.status}`;
+  if (titulo.status === "assisti") {
+    item.classList.add("titulo--concluido");
+  }
+
+  // Ouro: lançamento no futuro ganha destaque
+  const emBreve = titulo.lancamento ? titulo.lancamento > hojeIso() : false;
+  if (emBreve) {
+    item.classList.add("titulo--em-breve");
+  }
+
+  const principal = document.createElement("div");
+  principal.className = "titulo__principal";
 
   const nome = document.createElement("h3");
   nome.className = "titulo__nome";
@@ -33,7 +85,47 @@ function criarItem(titulo: Titulo): HTMLLIElement {
   formato.textContent = titulo.formato;
 
   etiquetas.append(status, formato);
-  item.append(nome, etiquetas);
+
+  if (titulo.lancamento) {
+    const lancamento = document.createElement("span");
+    lancamento.className = "etiqueta etiqueta--lancamento";
+    lancamento.textContent = `lançamento ${formatarData(titulo.lancamento)}`;
+    etiquetas.append(lancamento);
+  }
+
+  if (emBreve) {
+    const emBreveEtiqueta = document.createElement("span");
+    emBreveEtiqueta.className = "etiqueta etiqueta--em-breve";
+    emBreveEtiqueta.textContent = "em breve";
+    etiquetas.append(emBreveEtiqueta);
+  }
+
+  principal.append(nome, etiquetas);
+
+  // Os botões: cada um fecha sobre o SEU título
+  const acoes = document.createElement("div");
+  acoes.className = "titulo__acoes";
+
+  if (titulo.status === "quero_ver") {
+    acoes.append(
+      botao("Começar", "", () => mudarStatus(titulo.id, "assistindo")),
+      botao("Concluir", "botao--sucesso", () => mudarStatus(titulo.id, "assisti"))
+    );
+  } else if (titulo.status === "assistindo") {
+    acoes.append(
+      botao("Quero ver", "", () => mudarStatus(titulo.id, "quero_ver")),
+      botao("Concluir", "botao--sucesso", () => mudarStatus(titulo.id, "assisti"))
+    );
+  } else {
+    acoes.append(botao("Reabrir", "", () => mudarStatus(titulo.id, "quero_ver")));
+  }
+
+  acoes.append(
+    botao("Editar", "botao--neutro", () => editar(titulo)),
+    botao("Remover", "botao--perigo", () => remover(titulo.id))
+  );
+
+  item.append(principal, acoes);
   return item;
 }
 
@@ -44,8 +136,13 @@ function desenhar(): void {
 
   // filter: só os que passam no teste
   const queroVer = lista.filter((titulo) => titulo.status === "quero_ver");
+  const assistindo = lista.filter((titulo) => titulo.status === "assistindo");
+  const assistidos = lista.filter((titulo) => titulo.status === "assisti");
+
   elemento("total").textContent = String(lista.length);
   elemento("quero-ver").textContent = String(queroVer.length);
+  elemento("assistindo").textContent = String(assistindo.length);
+  elemento("assisti").textContent = String(assistidos.length);
 
   // find: o primeiro título de status "quero ver" (ou undefined)
   const proximo = lista.find((titulo) => titulo.status === "quero_ver");
@@ -58,31 +155,71 @@ function desenhar(): void {
   }
 }
 
+// O trio que se repete a cada ação:
+// 1. o banco confirma  2. a lista muda sem ser alterada  3. a tela acompanha
+async function mudarStatus(id: number, status: Status): Promise<void> {
+  elemento("erro").textContent = "";
+  try {
+    await alterarStatus(id, status);
+    lista = lista.map((titulo) => (titulo.id === id ? { ...titulo, status } : titulo));
+    desenhar();
+  } catch (erro) {
+    mostrarErro(erro);
+  }
+}
+
+async function remover(id: number): Promise<void> {
+  elemento("erro").textContent = "";
+  try {
+    await removerTitulo(id);
+    lista = lista.filter((titulo) => titulo.id !== id);
+    desenhar();
+  } catch (erro) {
+    mostrarErro(erro);
+  }
+}
+
+// Prata: o prompt troca o título; o banco confirma; a lista e a tela acompanham
+async function editar(titulo: Titulo): Promise<void> {
+  const novo = prompt(`Novo título para #${titulo.id}:`, titulo.titulo);
+  if (novo === null) {
+    return; // cancelou
+  }
+
+  elemento("erro").textContent = "";
+  try {
+    const atualizado = await editarTitulo(titulo.id, novo.trim());
+    lista = lista.map((item) => (item.id === titulo.id ? atualizado : item));
+    desenhar();
+  } catch (erro) {
+    mostrarErro(erro);
+  }
+}
+
 // O formulário: a função abaixo é um CALLBACK — quem a chama é o navegador.
-// Aula 3: o cadastro ainda grava só na tela; na Aula 4 ele vai para o banco.
-elemento("formulario").addEventListener("submit", (evento) => {
+elemento("formulario").addEventListener("submit", async (evento) => {
   evento.preventDefault(); // sem isto, a página recarrega e tudo se perde
-  const erro = elemento("erro");
-  erro.textContent = "";
+  elemento("erro").textContent = "";
 
   try {
-    adicionarTitulo(lista, {
+    const nova = await cadastrarTitulo({
       titulo: campo("titulo").value.trim(),
       formato: selecao("formato").value as Formato,
       generos: [],
+      lancamento: campo("lancamento").value || null,
     });
 
+    lista = [...lista, nova]; // acrescentar sem alterar: uma lista nova
     campo("titulo").value = "";
+    campo("lancamento").value = "";
     campo("titulo").focus();
     desenhar(); // mudou a lista? desenhe de novo
-  } catch (falha) {
-    if (falha instanceof Error) {
-      erro.textContent = falha.message;
-    }
+  } catch (erro) {
+    mostrarErro(erro);
   }
 });
 
-// Prata: busca um título pelo id e mostra o resultado no console
+// Prata da Aula 3: busca um título pelo id e mostra o resultado no console
 async function mostrarTitulo(id: number): Promise<void> {
   try {
     const procurado = await buscarTitulo(id);
@@ -98,7 +235,7 @@ async function mostrarTitulo(id: number): Promise<void> {
   }
 }
 
-// Ouro: aviso na tela quando a API não responde
+// Ouro da Aula 3: aviso na tela quando a API não responde
 function avisarApiForaDoAr(mensagem: string): void {
   const aviso = elemento("aviso-api");
   aviso.textContent = mensagem;

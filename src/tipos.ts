@@ -13,5 +13,5 @@ export interface Titulo {
 }
 
 // O que o usuário informa ao cadastrar:
-// id, status e adicionadoEm são responsabilidade do sistema
+// id, status e adicionadoEm são responsabilidade do sistema (o id vem do banco)
 export type NovoTitulo = Omit<Titulo, "id" | "status" | "adicionadoEm">;

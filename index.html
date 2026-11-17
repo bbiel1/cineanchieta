@@ -27,6 +27,14 @@
           <span class="estatistica__numero" id="quero-ver">0</span>
           <span class="estatistica__rotulo">quero ver</span>
         </div>
+        <div class="estatistica">
+          <span class="estatistica__numero" id="assistindo">0</span>
+          <span class="estatistica__rotulo">assistindo</span>
+        </div>
+        <div class="estatistica">
+          <span class="estatistica__numero" id="assisti">0</span>
+          <span class="estatistica__rotulo">assistidos</span>
+        </div>
       </section>
 
       <form class="formulario" id="formulario">
@@ -48,6 +56,11 @@
             <option value="filme" selected>Filme</option>
             <option value="serie">Série</option>
           </select>
+        </div>
+        <!-- Ouro: data opcional; o destaque "Em breve" aparece na lista -->
+        <div class="campo">
+          <label class="campo__rotulo" for="lancamento">Lançamento (opcional)</label>
+          <input class="campo__entrada" id="lancamento" type="date" />
         </div>
         <button class="botao botao--primario" type="submit">Cadastrar</button>
       </form>
