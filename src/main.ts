@@ -1,6 +1,7 @@
 import { campo, elemento, selecao } from "./dom";
 import {
   alterarStatus,
+  buscarEstatisticas,
   buscarEu,
   buscarTitulo,
   cadastrarTitulo,
@@ -13,16 +14,28 @@ import {
   removerTitulo,
   sessaoAtual,
 } from "./api";
-import type { Formato, Status, Titulo } from "./tipos";
+import {
+  contarPorStatus,
+  existeEmBreve,
+  filtrarPorStatus,
+  ordenarPorTitulo,
+  pesquisarTitulos,
+  todasAssistidas,
+} from "./servicos";
+import type { Contagem, Formato, Status, Titulo } from "./tipos";
 
 // ---------- Cabeçalho ----------
 elemento("nome-do-sistema").textContent = "CineAnchieta";
-elemento("versao").textContent = "v0.5.0";
+elemento("versao").textContent = "v0.6.0";
 elemento("data-de-hoje").textContent = new Date().toLocaleDateString("pt-BR");
 
 // O estado do programa: a lista que está valendo agora.
 // Começa vazia: quem preenche é a API (por isso é let, não const).
 let lista: Titulo[] = [];
+
+// Aula 6: o filtro e a busca mudam o que é MOSTRADO, nunca a lista.
+let statusSelecionado: Status | "todos" = "todos";
+let termoDeBusca = "";
 
 // Mensagens de erro das ações (a API é quem decide se o pedido está certo)
 function mostrarErro(erro: unknown): void {
@@ -90,7 +103,15 @@ function criarItem(titulo: Titulo): HTMLLIElement {
   formato.className = `etiqueta etiqueta--${titulo.formato}`;
   formato.textContent = titulo.formato;
 
-  etiquetas.append(status, formato);
+  // Aula 6: cada gênero vindo do banco vira uma etiqueta no cartão.
+  const generos = titulo.generos.map((genero) => {
+    const etiquetaGenero = document.createElement("span");
+    etiquetaGenero.className = "etiqueta etiqueta--genero";
+    etiquetaGenero.textContent = genero;
+    return etiquetaGenero;
+  });
+
+  etiquetas.append(status, formato, ...generos);
 
   if (titulo.lancamento) {
     const lancamento = document.createElement("span");
@@ -135,20 +156,60 @@ function criarItem(titulo: Titulo): HTMLLIElement {
   return item;
 }
 
+// Quais títulos mostrar: filtrar, pesquisar e ordenar.
+// O filtro muda o que é MOSTRADO, nunca a lista que existe.
+function titulosVisiveis(): Titulo[] {
+  let resultado = lista;
+  if (statusSelecionado !== "todos") {
+    resultado = filtrarPorStatus(resultado, statusSelecionado);
+  }
+  if (termoDeBusca.trim() !== "") {
+    resultado = pesquisarTitulos(resultado, termoDeBusca);
+  }
+  return ordenarPorTitulo(resultado);
+}
+
+// O painel principal vem do banco (GROUP BY). Se a rota falhar, o
+// reduce local mantém os números na tela (desafio Prata da Aula 6).
+function mostrarContagem(contagem: Contagem): void {
+  const total = contagem.quero_ver + contagem.assistindo + contagem.assisti;
+  elemento("total").textContent = String(total);
+  elemento("quero-ver").textContent = String(contagem.quero_ver);
+  elemento("assistindo").textContent = String(contagem.assistindo);
+  elemento("assisti").textContent = String(contagem.assisti);
+}
+
+async function atualizarPainel(): Promise<void> {
+  try {
+    mostrarContagem(await buscarEstatisticas());
+  } catch (erro) {
+    // Prata: as duas versões do painel convivem. O GROUP BY é melhor porque
+    // conta todos os títulos do usuário no banco, inclusive os que o filtro
+    // esconde. O reduce é melhor quando a lista já está inteira no navegador
+    // e não vale a pena fazer outra requisição.
+    console.warn("Painel do banco indisponível; usando reduce local.", erro);
+    mostrarContagem(contarPorStatus(lista));
+  }
+}
+
 // A função que desenha a tela inteira a partir da lista
 function desenhar(): void {
+  const visiveis = titulosVisiveis();
+
   // map: o antigo transformar da Aula 2, agora pronto na linguagem
-  elemento("lista").replaceChildren(...lista.map(criarItem));
+  elemento("lista").replaceChildren(...visiveis.map(criarItem));
+  elemento("vazio").hidden = visiveis.length > 0;
 
-  // filter: só os que passam no teste
-  const queroVer = lista.filter((titulo) => titulo.status === "quero_ver");
-  const assistindo = lista.filter((titulo) => titulo.status === "assistindo");
-  const assistidos = lista.filter((titulo) => titulo.status === "assisti");
+  // some: existe pelo menos um título com lançamento futuro?
+  elemento("aviso-em-breve").hidden = !existeEmBreve(lista, hojeIso());
 
-  elemento("total").textContent = String(lista.length);
-  elemento("quero-ver").textContent = String(queroVer.length);
-  elemento("assistindo").textContent = String(assistindo.length);
-  elemento("assisti").textContent = String(assistidos.length);
+  // every: todos os títulos já foram assistidos?
+  if (todasAssistidas(lista)) {
+    console.log("Parabéns: nenhum título em aberto!");
+  }
+
+  // O painel vem pronto do banco (GROUP BY)
+  void atualizarPainel();
 
   // find: o primeiro título de status "quero ver" (ou undefined)
   const proximo = lista.find((titulo) => titulo.status === "quero_ver");
@@ -160,6 +221,26 @@ function desenhar(): void {
     aviso.hidden = true;
   }
 }
+
+// Os botões de filtro: um só "ouvinte" para o grupo inteiro.
+elemento("filtros-status").addEventListener("click", (evento) => {
+  const alvo = evento.target;
+  if (!(alvo instanceof HTMLButtonElement)) return;
+  const escolhido = alvo.dataset.status;
+  if (!escolhido) return;
+
+  statusSelecionado = escolhido as Status | "todos";
+  for (const botaoFiltro of elemento("filtros-status").querySelectorAll("button")) {
+    botaoFiltro.classList.toggle("filtro--ativo", botaoFiltro === alvo);
+  }
+  desenhar();
+});
+
+// A busca filtra enquanto o usuário digita.
+campo("busca").addEventListener("input", () => {
+  termoDeBusca = campo("busca").value;
+  desenhar();
+});
 
 // O trio que se repete a cada ação:
 // 1. o banco confirma  2. a lista muda sem ser alterada  3. a tela acompanha
@@ -208,15 +289,26 @@ elemento("formulario").addEventListener("submit", async (evento) => {
   elemento("erro").textContent = "";
 
   try {
+    // "drama, terror" vira ["drama", "terror"], sem repetidos.
+    const generos = [
+      ...new Set(
+        campo("generos")
+          .value.split(",")
+          .map((genero) => genero.trim())
+          .filter((genero) => genero !== "")
+      ),
+    ];
+
     const nova = await cadastrarTitulo({
       titulo: campo("titulo").value.trim(),
       formato: selecao("formato").value as Formato,
-      generos: [],
+      generos,
       lancamento: campo("lancamento").value || null,
     });
 
     lista = [...lista, nova]; // acrescentar sem alterar: uma lista nova
     campo("titulo").value = "";
+    campo("generos").value = "";
     campo("lancamento").value = "";
     campo("titulo").focus();
     desenhar(); // mudou a lista? desenhe de novo
@@ -307,6 +399,13 @@ elemento("form-criar").addEventListener("submit", async (evento) => {
 elemento("botao-sair").addEventListener("click", () => {
   encerrarSessao();
   lista = [];
+  statusSelecionado = "todos";
+  termoDeBusca = "";
+  campo("busca").value = "";
+  for (const botaoFiltro of elemento("filtros-status").querySelectorAll("button")) {
+    botaoFiltro.classList.toggle("filtro--ativo", botaoFiltro.dataset.status === "todos");
+  }
+  (elemento("formulario") as HTMLFormElement).reset();
   (elemento("form-entrar") as HTMLFormElement).reset();
   (elemento("form-criar") as HTMLFormElement).reset();
   elemento("erro").textContent = "";

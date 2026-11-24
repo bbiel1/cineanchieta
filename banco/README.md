@@ -1,6 +1,6 @@
 # Banco de dados — CineAnchieta
 
-Banco do projeto do grupo, criado na Aula 2 e usado pela API a partir da Aula 3: **`cineanchieta`**. A partir da Aula 4, a API também grava, atualiza e remove títulos. Na Aula 5, o dono de cada título passa a ser quem fez login, e a senha fica guardada só como hash bcrypt.
+Banco do projeto do grupo, criado na Aula 2 e usado pela API a partir da Aula 3: **`cineanchieta`**. A partir da Aula 4, a API também grava, atualiza e remove títulos. Na Aula 5, o dono de cada título passa a ser quem fez login, e a senha fica guardada só como hash bcrypt. Na Aula 6, os gêneros saem de `titulo_genero` e voltam em cada título com `GROUP_CONCAT`; o painel passa a ser contado no banco com `GROUP BY`.
 
 O script principal é o [`script.sql`](script.sql). Ele **recria o banco do zero** (tem um `DROP DATABASE`), então rode-o apenas quando quiser resetar os dados.
 
@@ -57,6 +57,8 @@ erDiagram
 ```
 
 > O Workbench não desenha o DER a partir do script. Este diagrama serve para conferir o modelo. No caderno, desenhe as quatro caixas base e as três ligações; para o desafio Ouro, acrescente a quinta caixa (`comentarios`).
+
+**Imagem para a apresentação:** [`der-cineanchieta.png`](der-cineanchieta.png) — as 4 tabelas base do projeto, pronta para colar no slide ou no Word. O diagrama acima também mostra a tabela opcional `comentarios`, criada só por quem rodou o desafio Ouro da Aula 2.
 
 ## As quatro tabelas base
 
@@ -173,6 +175,53 @@ SELECT id, usuario_id, titulo FROM titulos WHERE id = 3;
 ```
 
 Como nenhuma linha casa com `id = 3 AND usuario_id = 2`, o `DELETE` afeta **0 linhas** e a API responde **404** — igual a um título que não existe. O mesmo filtro aparece no `SELECT`, no `UPDATE` e no `PATCH`.
+
+## Conferência da Aula 6
+
+Os gêneros continuam guardados em `generos` e `titulo_genero`; a novidade é a leitura em uma linha só por título e o painel calculado no banco.
+
+```sql
+USE cineanchieta;
+
+-- Os gêneros de cada título da Ana, em uma linha (GROUP_CONCAT)
+SELECT t.id, t.titulo,
+       (SELECT GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ',')
+          FROM titulo_genero AS tg
+          JOIN generos AS g ON g.id = tg.genero_id
+         WHERE tg.titulo_id = t.id) AS generos
+FROM titulos AS t
+WHERE t.usuario_id = 1
+ORDER BY t.titulo;
+
+-- O painel da Ana: 2 quero_ver, 2 assistindo, 2 assisti
+SELECT status, COUNT(*) AS quantidade
+FROM titulos
+WHERE usuario_id = 1
+GROUP BY status;
+
+-- A busca por gênero, como a API faz com EXISTS
+SELECT DISTINCT t.id, t.titulo
+FROM titulos AS t
+WHERE t.usuario_id = 1
+  AND EXISTS (
+    SELECT 1
+      FROM titulo_genero AS tg
+      JOIN generos AS g ON g.id = tg.genero_id
+     WHERE tg.titulo_id = t.id
+       AND g.nome LIKE '%terror%'
+  )
+ORDER BY t.titulo;
+```
+
+Para conferir pela API, depois do login:
+
+```js
+const painel = await fetch("/api/estatisticas", {
+  headers: { Authorization: `Bearer ${token}` },
+}).then((r) => r.json());
+
+console.log(painel); // { quero_ver: 2, assistindo: 2, assisti: 2 }
+```
 
 ## Conferência realizada
 

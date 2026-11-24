@@ -2,32 +2,39 @@
 
 Sistema de acompanhamento de filmes e séries desenvolvido como projeto do grupo no curso TaskFlow.
 
-**Aula 5** — cadastro, login com bcrypt e JWT, e cada pessoa vê e mexe só nos próprios títulos.
+**Aula 6** — gêneros vindos do banco, filtros por status, busca por título ou gênero e painel calculado com `GROUP BY`.
 
 ## Tema
 
 - **Registro principal:** título (filme ou série)
 - **Status:** quero ver, assistindo, assisti
 - **Formato:** filme ou série
-- **Gêneros:** lista de textos (a API ainda devolve uma lista vazia; entra na Aula 6)
+- **Gêneros:** lista de textos lida de `titulo_genero` (relação N:N)
 - **Data:** adicionadoEm
 - **Data de lançamento:** lancamento (opcional)
 - **Dono:** quem fez login — o `usuario_id` vem do token JWT, nunca da página
 - **Conta:** nome, e-mail único e senha (o banco guarda só o hash bcrypt)
+- **Painel:** total, quero ver, assistindo e assistidos, calculado no banco com `GROUP BY`
 
 ## O que a página faz
 
 - Abre na tela de entrada, com **Entrar** e **Criar conta**
 - Depois do login, guarda o token em `localStorage` e mostra no cabeçalho o nome vindo de `GET /api/eu`
 - Busca na API só os títulos de quem entrou (`/api/titulos`) e desenha a lista com `map()` e `replaceChildren()`
-- Conta o total e os títulos por status com `filter()`: quero ver, assistindo e assistidos
+- Mostra os gêneros de cada título em etiquetas, graças ao `GROUP_CONCAT` da API
+- Filtra por status com `filter()` e pesquisa por título **ou gênero** com `includes()`
+- Ordena a lista por título com `[...lista].sort()` (sem alterar a lista original)
+- Mostra o painel com os números calculados pelo banco (`GET /api/estatisticas`)
 - Usa `find()` para achar o primeiro título de status "quero ver" e exibir o aviso "Comece por"
+- Usa `some()` para mostrar o aviso de títulos com lançamento futuro
+- Usa `every()` para avisar no console quando todos os títulos já foram assistidos
 - Mostra a barra lateral e a etiqueta coloridas conforme o status e o formato
-- O formulário cadastra um título no MySQL, sempre com o dono que veio do token
+- O formulário cadastra um título no MySQL, com dono, formato, lançamento e gêneros
 - Os botões **Começar**, **Concluir**, **Quero ver** e **Reabrir** mudam o status no banco
 - **Editar** troca o título usando `prompt()` (desafio Prata)
 - **Remover** apaga o título do banco
 - O campo **Lançamento** guarda a data e destaca com **"Em breve"** os títulos que ainda não estrearam (desafio Ouro)
+- O campo **Gêneros** aceita textos separados por vírgula e grava em `generos` e `titulo_genero` (desafio Ouro)
 - Se a API estiver fora do ar, uma mensagem amigável aparece na tela
 - **Sair** apaga a sessão do navegador e volta para a tela de entrada
 - O console mostra o resultado de `mostrarTitulo(3)` depois do login (desafio Prata da Aula 3)
@@ -55,13 +62,15 @@ Sistema de acompanhamento de filmes e séries desenvolvido como projeto do grupo
 │  ├─ testes_erros.sql
 │  ├─ desafio_prata.sql
 │  ├─ desafio_ouro.sql
+│  ├─ der-cineanchieta.png
 │  └─ README.md
-└─ src/
-   ├─ api.ts
-   ├─ dom.ts
-   ├─ tipos.ts
-   ├─ servicos.ts
-   └─ main.ts
+├─ src/
+│  ├─ api.ts
+│  ├─ dom.ts
+│  ├─ servicos.ts
+│  ├─ tipos.ts
+│  └─ main.ts
+└─ GUIA_AULAS_6_7.md
 ```
 
 ## Como rodar
@@ -71,6 +80,10 @@ O projeto tem dois programas: a API (porta 3000) e a página (porta 5173).
 ### 1. Banco de dados
 
 O MySQL precisa estar rodando. Se o banco `cineanchieta` ainda não existir, rode `banco/script.sql` no Workbench (ele recria o banco do zero).
+
+> **Atenção:** o script tem `DROP DATABASE`. Ele apaga e recria tudo. Não rode durante a apresentação.
+
+Se o Workbench reclamar de `utf8mb4_0900_ai_ci`, seu servidor é MariaDB (XAMPP), não MySQL 8. Troque a collation do `CREATE DATABASE` para `utf8mb4_unicode_ci`.
 
 ### 2. API
 
@@ -113,20 +126,21 @@ cd api
 npm run verificar
 ```
 
-## Checklist da Aula 5
+## Checklist da Aula 6
 
-- A página abre na tela de entrada; o sistema só aparece depois do login.
-- Senha errada mostra **"E-mail ou senha inválidos."** e não entra.
-- Entrar como Ana mostra o nome dela no cabeçalho, 6 títulos e o painel `6 / 2 / 2 / 2`.
-- Recarregar a página mantém a sessão (F5 continua logado).
-- **Sair** apaga a sessão e volta para a tela de entrada.
-- **Criar conta** entra direto no sistema, mostra o nome novo e uma lista vazia.
-- Entrar como Bruno mostra só o Oppenheimer; tentar abrir o título #3 da Ana devolve `404`.
-- Sem `Authorization: Bearer <token>`, as rotas de títulos respondem `401`.
-- `GET /api/eu` devolve só `id`, `nome` e `email` — nunca a senha nem o hash.
+- A página mostra os gêneros em cada cartão (por exemplo, Interestelar: drama e ficção científica).
+- O painel da Ana mostra `6 / 2 / 2 / 2`.
+- Clicar em **Quero ver**, **Assistindo** ou **Assisti** filtra a lista, mas o painel continua mostrando o total de verdade.
+- Digitar `duna` na busca mostra Duna: Parte Dois; digitar `terror` mostra os títulos que têm esse gênero.
+- O aviso **"Em breve"** aparece porque há títulos com lançamento futuro.
+- A lista está ordenada por título.
+- Cadastrar um título com gêneros grava nas tabelas `generos` e `titulo_genero`.
+- `GET /api/titulos?status=quero_ver&busca=duna` devolve só o que combina com os dois filtros.
+- `GET /api/estatisticas` devolve `{ quero_ver, assistindo, assisti }`.
 - `npm run verificar` passa sem erros nas duas pastas.
+- O `main.ts` mantém as duas versões do painel (desafio Prata): `reduce` local e `GROUP BY` no banco.
 
-### O que continua valendo das Aulas 1–4
+### O que continua valendo das Aulas 1–5
 
 - Cadastrar um título: ele aparece na lista e continua depois de apertar F5.
 - **Começar**, **Concluir**, **Quero ver** e **Reabrir** mudam o status; concluir grava `assistido_em`.
@@ -134,7 +148,8 @@ npm run verificar
 - O `find` mostra **"Comece por"** e o console executa `mostrarTitulo(3)`.
 - Lançamento futuro ganha a etiqueta **"Em breve"**.
 - O aviso de API fora do ar continua funcionando.
-- O painel mostra total, quero ver, assistindo e assistidos.
+- Cada conta vê e altera só os próprios títulos; um id de outra pessoa responde `404`.
+- O login usa bcrypt e JWT; o `.env` não vai para o Git.
 
 ## API
 
@@ -152,14 +167,22 @@ A partir da Aula 5, o dono é **quem fez login**. O navegador manda o token no c
 
 | Rota | O que faz | Sucesso |
 | --- | --- | --- |
-| `GET /api/titulos` | Lista os títulos do usuário logado, em ordem de id | `200` + os títulos |
+| `GET /api/titulos` | Lista os títulos do usuário logado; aceita `?status=` e `?busca=` | `200` + os títulos |
 | `GET /api/titulos/:id` | Devolve um título do usuário logado | `200` + o título |
-| `POST /api/titulos` | Cadastra um título para o usuário logado | `201` + o título criado |
+| `POST /api/titulos` | Cadastra um título, com `generos` opcional | `201` + o título criado |
 | `PATCH /api/titulos/:id/status` | Muda só o status | `204`, sem conteúdo |
 | `PUT /api/titulos/:id` | Edita só o título (Prata) | `200` + o título atualizado |
 | `DELETE /api/titulos/:id` | Remove o título | `204`, sem conteúdo |
 
-Quando dá errado: `400` se o pedido veio errado (título curto, formato, status, data ou cadastro inválido), `401` sem token, com token vencido/inválido ou com e-mail/senha errados, `404` se o título não existe **ou é de outra pessoa**, `409` se o e-mail já está cadastrado e `500` se o servidor quebrou.
+### Painel (Aula 6)
+
+| Rota | O que faz | Sucesso |
+| --- | --- | --- |
+| `GET /api/estatisticas` | Conta os títulos do usuário por status com `GROUP BY` | `200` + `{ quero_ver, assistindo, assisti }` |
+
+Cada título devolvido pela API tem `generos: string[]`. O banco guarda os gêneros em `generos` e `titulo_genero`; a API os junta em uma linha com `GROUP_CONCAT` e o front faz `split(",")`.
+
+Quando dá errado: `400` se o pedido veio errado (título curto, formato, status, data, gêneros ou cadastro inválido), `401` sem token, com token vencido/inválido ou com e-mail/senha errados, `404` se o título não existe **ou é de outra pessoa**, `409` se o e-mail já está cadastrado e `500` se o servidor quebrou.
 
 ### Exemplos
 
@@ -179,13 +202,33 @@ const meusTitulos = await fetch("/api/titulos", {
 console.log(meusTitulos);
 ```
 
-- `GET /api/titulos` com o token da Ana → 6 títulos
+- `GET /api/titulos` com o token da Ana → 6 títulos, cada um com `generos`
 - `GET /api/titulos/3` com o token da Ana → Duna: Parte Dois
 - `GET /api/titulos/7` com o token da Ana → 404 (Oppenheimer é do Bruno)
 - `GET /api/titulos` sem o cabeçalho `Authorization` → 401
 - `GET /api/eu` com o token da Ana → `{ id: 1, nome: "Ana Souza", email: "ana@cineanchieta.com" }`
 
-Para testar um `POST` autenticado:
+Filtros e busca:
+
+```js
+const filtrados = await fetch("/api/titulos?status=quero_ver&busca=duna", {
+  headers: { Authorization: `Bearer ${token}` },
+}).then((r) => r.json());
+
+console.log(filtrados); // só Duna: Parte Dois
+```
+
+Painel:
+
+```js
+const painel = await fetch("/api/estatisticas", {
+  headers: { Authorization: `Bearer ${token}` },
+}).then((r) => r.json());
+
+console.log(painel); // { quero_ver: 2, assistindo: 2, assisti: 2 }
+```
+
+Para testar um `POST` autenticado com gêneros:
 
 ```js
 await fetch("/api/titulos", {
@@ -198,13 +241,24 @@ await fetch("/api/titulos", {
     titulo: "Testar o POST",
     formato: "filme",
     lancamento: "2027-01-15",
+    generos: ["drama", "aventura"],
   }),
 }).then((r) => r.json());
 ```
 
-Depois rode `SELECT * FROM titulos;` no Workbench: o título estará lá, com o `usuario_id` de quem fez o pedido. Tente também com `titulo: "ab"` e leia a resposta.
+Depois rode no Workbench:
 
-Enquanto os gêneros não são lidos da tabela `titulo_genero` (Aula 6), a API devolve `generos: []` em cada título.
+```sql
+SELECT * FROM titulos WHERE titulo = 'Testar o POST';
+
+SELECT g.nome
+FROM titulo_genero AS tg
+JOIN generos AS g ON g.id = tg.genero_id
+JOIN titulos AS t ON t.id = tg.titulo_id
+WHERE t.titulo = 'Testar o POST';
+```
+
+Tente também com `titulo: "ab"` e com 11 gêneros e leia a resposta.
 
 ### Por que ninguém apaga o título de outra pessoa? (Ouro)
 
@@ -244,6 +298,16 @@ FROM titulos
 WHERE usuario_id = 1
 GROUP BY status;
 
+-- Gêneros de cada título, todos em uma linha (GROUP_CONCAT)
+SELECT t.id, t.titulo,
+       (SELECT GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ',')
+          FROM titulo_genero AS tg
+          JOIN generos AS g ON g.id = tg.genero_id
+         WHERE tg.titulo_id = t.id) AS generos
+FROM titulos AS t
+WHERE t.usuario_id = 1
+ORDER BY t.titulo;
+
 -- Concluir preenche assistido_em; reabrir apaga a data
 SELECT id, titulo, status, assistido_em
 FROM titulos
@@ -274,4 +338,4 @@ Detalhes do modelo, DER, testes de erro e desafios: [`banco/README.md`](banco/RE
 
 ## Próxima aula
 
-Na Aula 6 os gêneros saem de `titulo_genero` e passam a vir do banco em cada título, substituindo o `generos: []` atual.
+A Aula 7, em **26/11**, é a apresentação do projeto do grupo: 7 minutos, DER, demonstração, código e defesa das decisões. O roteiro, as perguntas da banca e a cola de estudo estão em [`GUIA_AULAS_6_7.md`](GUIA_AULAS_6_7.md).

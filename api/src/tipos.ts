@@ -7,6 +7,9 @@ export type Status = "quero_ver" | "assistindo" | "assisti";
 export const FORMATOS: Formato[] = ["filme", "serie"];
 export const STATUS: Status[] = ["quero_ver", "assistindo", "assisti"];
 
+// Aula 6: os números do painel. Record garante que os três status existam.
+export type Contagem = Record<Status, number>;
+
 // O que chega no corpo do POST. Tudo é opcional porque quem manda é
 // o navegador: a API valida antes de usar.
 export interface DadosTitulo {
@@ -14,7 +17,7 @@ export interface DadosTitulo {
   descricao?: string | null;
   formato?: Formato;
   lancamento?: string | null;
-  // generos?: string[]; // entram na Aula 6, junto com titulo_genero
+  generos?: string[]; // Aula 6: nomes separados por vírgula viram esta lista
 }
 
 // Aula 5: cadastro e login. A senha chega em texto uma única vez e vira

@@ -1,6 +1,9 @@
 export type Status = "quero_ver" | "assistindo" | "assisti";
 export type Formato = "filme" | "serie";
 
+// Aula 6: os números do painel. Record garante que as três chaves existam.
+export type Contagem = Record<Status, number>;
+
 // Aula 5: o que a API devolve no login e guardamos no navegador.
 export interface Sessao {
   token: string;

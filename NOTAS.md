@@ -56,3 +56,24 @@
 - Versão atualizada para `v0.5.0`; `api/package.json` em `0.5.0`, com `bcryptjs` e `jsonwebtoken`.
 
 > Na Aula 6 os gêneros saem de `titulo_genero` e passam a vir do banco em cada título.
+
+# Aula 5 → Aula 6
+
+- O `SELECT_TITULOS` ganhou o alias `t` e uma subconsulta com `GROUP_CONCAT`: os gêneros de cada título chegam em uma linha só, como `"drama,ficção científica"`.
+- `paraTitulo()` desfaz o `GROUP_CONCAT` com `split(",")` e devolve `[]` quando o banco manda `NULL`.
+- `buscarUm` usa `t.id` e `t.usuario_id` e devolve o título já com os gêneros.
+- `GET /api/titulos` aceita `?status=` e `?busca=`; a busca usa `LIKE` no título e `EXISTS` nos gêneros. A lista sai com `ORDER BY t.titulo`.
+- Rota nova `GET /api/estatisticas`: `GROUP BY status` + `COUNT(*)`, começando com `{ quero_ver: 0, assistindo: 0, assisti: 0 }` porque status sem título não aparece.
+- `POST /api/titulos` aceita `generos`; a API valida (até 10 gêneros, cada um com 1 a 40 caracteres) e grava com `ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)` + `INSERT IGNORE` em `titulo_genero`.
+- `src/tipos.ts` ganhou `Contagem = Record<Status, number>`.
+- `src/api.ts` ganhou `buscarEstatisticas()`; `converter()` normaliza `generos` para nunca chegar `undefined` à tela.
+- `src/servicos.ts` ganhou `filtrarPorStatus`, `pesquisarTitulos` (título + gênero), `existeEmBreve`, `todasAssistidas`, `contarPorStatus` e `ordenarPorTitulo`; `transformar` continua para comparar com o `map`.
+- `main.ts` ganhou `statusSelecionado`, `termoDeBusca`, `titulosVisiveis()`, `atualizarPainel()` e os ouvintes dos filtros e da busca.
+- **Prata:** o painel usa `buscarEstatisticas` (GROUP BY) e cai para `contarPorStatus` (reduce) se a rota falhar; o comentário no código explica quando cada versão é melhor.
+- **Ouro:** campo de gêneros no formulário, leitura dos gêneros no cartão e busca encontrando também pelos gêneros.
+- `index.html` e o CSS ganharam filtros, busca, mensagem de lista vazia, aviso "Em breve" e a etiqueta de gênero.
+- `README.md` atualizado; criado `GUIA_AULAS_6_7.md` com o roteiro da apresentação, perguntas da banca e cola de estudo.
+- DER em imagem gerado em `banco/der-cineanchieta.png` (4 tabelas base), ligado no `banco/README.md`.
+- Versão atualizada para `v0.6.0`; `api/package.json` e `api/package-lock.json` em `0.6.0`.
+
+> Na Aula 7 não há conteúdo novo: é a apresentação do projeto do grupo, com 7 minutos de demonstração, banco, código e defesa das decisões.

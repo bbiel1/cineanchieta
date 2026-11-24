@@ -8,6 +8,7 @@ import { banco } from "./banco";
 import {
   FORMATOS,
   STATUS,
+  type Contagem,
   type DadosCadastro,
   type DadosLogin,
   type DadosTitulo,
@@ -19,20 +20,55 @@ app.use(express.json());
 
 // O SELECT que as rotas usam. Os "AS" trocam o nome da coluna do jeito
 // do banco (adicionado_em) para o jeito do TypeScript (adicionadoEm).
+// A subconsulta com GROUP_CONCAT devolve todos os gêneros em uma linha só:
+// "drama,ficção científica". O alias t evita coluna ambígua.
 const SELECT_TITULOS = `
-  SELECT id, titulo, descricao, formato, status,
-         DATE_FORMAT(lancamento, '%Y-%m-%d') AS lancamento,
-         adicionado_em AS adicionadoEm
-    FROM titulos`;
+  SELECT t.id, t.titulo, t.descricao, t.formato, t.status,
+         DATE_FORMAT(t.lancamento, '%Y-%m-%d') AS lancamento,
+         t.adicionado_em AS adicionadoEm,
+         (SELECT GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ',')
+            FROM titulo_genero tg
+            JOIN generos g ON g.id = tg.genero_id
+           WHERE tg.titulo_id = t.id) AS generos
+    FROM titulos t`;
+
+// O banco devolve os gêneros como um texto só (ou NULL). Esta função
+// faz o caminho de volta: "drama,terror" vira ["drama", "terror"].
+function paraTitulo(linha: RowDataPacket): RowDataPacket {
+  return {
+    ...linha,
+    generos: linha.generos ? String(linha.generos).split(",") : [],
+  };
+}
 
 // Busca um título do usuário logado pelo id. Usada pelo GET e depois de
 // cada escrita. O usuarioId vem do token, nunca da página.
 async function buscarUm(id: number, usuarioId: number): Promise<RowDataPacket | undefined> {
   const [linhas] = await banco.execute<RowDataPacket[]>(
-    `${SELECT_TITULOS} WHERE id = ? AND usuario_id = ?`,
+    `${SELECT_TITULOS} WHERE t.id = ? AND t.usuario_id = ?`,
     [id, usuarioId]
   );
-  return linhas.length > 0 ? { ...linhas[0], generos: [] } : undefined;
+  return linhas.length > 0 ? paraTitulo(linhas[0]) : undefined;
+}
+
+// Liga os gêneros ao título. Se o gênero ainda não existe para este usuário,
+// o INSERT cria; se já existe, o ON DUPLICATE KEY reaproveita o id.
+async function salvarGeneros(
+  tituloId: number,
+  usuarioId: number,
+  generos: string[]
+): Promise<void> {
+  for (const nome of generos) {
+    const [resultado] = await banco.execute<ResultSetHeader>(
+      `INSERT INTO generos (usuario_id, nome) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+      [usuarioId, nome]
+    );
+    await banco.execute(
+      "INSERT IGNORE INTO titulo_genero (titulo_id, genero_id) VALUES (?, ?)",
+      [tituloId, resultado.insertId]
+    );
+  }
 }
 
 // Confere os campos que vieram do navegador. Devolve a mensagem de erro,
@@ -49,6 +85,19 @@ function validar(dados: DadosTitulo): string | undefined {
   }
   if (dados.lancamento && !dataValida(dados.lancamento)) {
     return "Data de lançamento inválida.";
+  }
+  if (dados.generos !== undefined) {
+    if (!Array.isArray(dados.generos)) {
+      return "Gêneros inválidos.";
+    }
+    if (dados.generos.length > 10) {
+      return "No máximo 10 gêneros por título.";
+    }
+    for (const genero of dados.generos) {
+      if (typeof genero !== "string" || genero.trim().length < 1 || genero.trim().length > 40) {
+        return "Cada gênero precisa ter entre 1 e 40 caracteres.";
+      }
+    }
   }
   return undefined;
 }
@@ -168,16 +217,56 @@ app.get("/api/eu", exigirLogin, async (_req, res) => {
   res.json({ id: usuario.id, nome: usuario.nome, email: usuario.email });
 });
 
-// ---------- LER ----------
+// ---------- PAINEL (Aula 6) ----------
 
-// Todos os títulos do usuário logado
-app.get("/api/titulos", exigirLogin, async (_req, res) => {
+// O GROUP BY faz no banco o que o reduce fazia no navegador: conta os
+// títulos por status. Status sem nenhum título não vem na resposta, por
+// isso o objeto começa com zeros.
+app.get("/api/estatisticas", exigirLogin, async (_req, res) => {
   const [linhas] = await banco.execute<RowDataPacket[]>(
-    `${SELECT_TITULOS} WHERE usuario_id = ? ORDER BY id`,
+    `SELECT status, COUNT(*) AS quantidade
+       FROM titulos
+      WHERE usuario_id = ?
+      GROUP BY status`,
     [usuarioDe(res)]
   );
-  // os gêneros chegam na Aula 6; por enquanto, uma lista vazia em cada título
-  res.json(linhas.map((linha) => ({ ...linha, generos: [] })));
+
+  const contagem: Contagem = { quero_ver: 0, assistindo: 0, assisti: 0 };
+  for (const linha of linhas) {
+    contagem[linha.status as Status] = Number(linha.quantidade);
+  }
+  res.json(contagem);
+});
+
+// ---------- LER ----------
+
+// Todos os títulos do usuário logado. A partir da Aula 6, a URL aceita
+// filtros opcionais: /api/titulos?status=quero_ver&busca=duna
+app.get("/api/titulos", exigirLogin, async (req, res) => {
+  let sql = `${SELECT_TITULOS} WHERE t.usuario_id = ?`;
+  const valores: (string | number)[] = [usuarioDe(res)];
+
+  const { status, busca } = req.query;
+  if (typeof status === "string" && STATUS.includes(status as Status)) {
+    sql += " AND t.status = ?"; // o filter, no banco
+    valores.push(status);
+  }
+  if (typeof busca === "string" && busca.trim() !== "") {
+    const termo = `%${busca.trim()}%`;
+    // Procura no título e também nos gêneros (desafio Ouro da Aula 6).
+    sql += ` AND (t.titulo LIKE ? OR EXISTS (
+      SELECT 1
+        FROM titulo_genero tg
+        JOIN generos g ON g.id = tg.genero_id
+       WHERE tg.titulo_id = t.id
+         AND g.nome LIKE ?
+    ))`;
+    valores.push(termo, termo);
+  }
+  sql += " ORDER BY t.titulo"; // o sort
+
+  const [linhas] = await banco.execute<RowDataPacket[]>(sql, valores);
+  res.json(linhas.map(paraTitulo));
 });
 
 // Um título: pode não existir ou ser de outra pessoa
@@ -218,7 +307,14 @@ app.post("/api/titulos", exigirLogin, async (req, res) => {
     ]
   );
 
-  // 201: criado. Devolve o título como o banco o guardou (id e datas).
+  // Aula 6 (Ouro): depois do título, os gêneros entram em generos e
+  // titulo_genero. A lista já foi validada e sem duplicatas.
+  const generos = Array.isArray(dados.generos)
+    ? [...new Set(dados.generos.map((genero) => genero.trim()).filter((genero) => genero !== ""))]
+    : [];
+  await salvarGeneros(resultado.insertId, usuarioDe(res), generos);
+
+  // 201: criado. Devolve o título como o banco o guardou (id, datas e gêneros).
   res.status(201).json(await buscarUm(resultado.insertId, usuarioDe(res)));
 });
 

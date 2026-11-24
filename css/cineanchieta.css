@@ -173,6 +173,21 @@ body {
   box-shadow: var(--sombra);
 }
 
+/* Aula 6: o formulário de cadastro ganhou o campo de gêneros */
+.formulario--cadastro {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.formulario--cadastro .campo--largo,
+.formulario--cadastro .botao {
+  grid-column: 1 / -1;
+}
+
+.formulario--cadastro .botao {
+  justify-self: start;
+  min-width: 180px;
+}
+
 .campo {
   display: grid;
   gap: 6px;
@@ -298,6 +313,74 @@ body {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Aula 6: filtros por status e busca por título ou gênero */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filtros__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filtro {
+  padding: 7px 13px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filtro:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--texto);
+}
+
+.filtro--ativo {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #bfdbfe;
+}
+
+.busca {
+  flex: 1 1 240px;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 9px 13px;
+  background: #0f172a;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.busca::placeholder {
+  color: #64748b;
+}
+
+.busca:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.35);
+  outline-offset: 1px;
+  border-color: var(--azul);
+}
+
+.vazio {
+  margin: 24px 0;
+  color: var(--texto-suave);
+  text-align: center;
 }
 
 .titulo {
@@ -431,6 +514,16 @@ body {
   color: #fcd34d;
 }
 
+/* Aula 6: gêneros vêm do banco e ficam em etiquetas mais discretas */
+.etiqueta--genero {
+  background: rgba(45, 212, 191, 0.1);
+  border-color: rgba(45, 212, 191, 0.3);
+  color: #99f6e4;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
 @media (max-width: 760px) {
   .formulario {
     grid-template-columns: 1fr 1fr;
@@ -461,6 +554,16 @@ body {
 
   .painel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .busca {
+    width: 100%;
+    max-width: none;
   }
 
   .formulario {

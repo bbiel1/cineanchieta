@@ -120,8 +120,8 @@
         </div>
       </section>
 
-      <form class="formulario" id="formulario">
-        <div class="campo">
+      <form class="formulario formulario--cadastro" id="formulario">
+        <div class="campo campo--largo">
           <label class="campo__rotulo" for="titulo">Título</label>
           <input
             class="campo__entrada"
@@ -145,6 +145,18 @@
           <label class="campo__rotulo" for="lancamento">Lançamento (opcional)</label>
           <input class="campo__entrada" id="lancamento" type="date" />
         </div>
+        <!-- Aula 6 (Ouro): gêneros separados por vírgula; o banco guarda em N:N -->
+        <div class="campo campo--largo">
+          <label class="campo__rotulo" for="generos">Gêneros (opcional)</label>
+          <input
+            class="campo__entrada"
+            id="generos"
+            type="text"
+            maxlength="200"
+            autocomplete="off"
+            placeholder="Ex.: drama, ficção científica"
+          />
+        </div>
         <button class="botao botao--primario" type="submit">Cadastrar</button>
       </form>
 
@@ -153,8 +165,31 @@
       <!-- Ouro: aviso visível quando a API está fora do ar -->
       <p class="aviso aviso--erro" id="aviso-api" role="alert" hidden></p>
 
+      <!-- Aula 6: aviso escondido; o some é quem o mostra -->
+      <p class="aviso" id="aviso-em-breve" hidden>
+        Atenção: há títulos com lançamento futuro na sua lista.
+      </p>
+
       <!-- aviso escondido (hidden): o find é quem o mostra -->
       <p class="aviso" id="comece-por" hidden></p>
+
+      <!-- Aula 6: filtros por status e busca por título ou gênero -->
+      <div class="filtros">
+        <div class="filtros__grupo" id="filtros-status">
+          <button class="filtro filtro--ativo" type="button" data-status="todos">Todas</button>
+          <button class="filtro" type="button" data-status="quero_ver">Quero ver</button>
+          <button class="filtro" type="button" data-status="assistindo">Assistindo</button>
+          <button class="filtro" type="button" data-status="assisti">Assisti</button>
+        </div>
+        <input
+          class="busca"
+          id="busca"
+          type="search"
+          placeholder="Pesquisar por título ou gênero..."
+        />
+      </div>
+
+      <p class="vazio" id="vazio" hidden>Nenhum título encontrado.</p>
 
       <!-- a lista começa vazia: quem a preenche é a API -->
       <ul class="lista" id="lista"></ul>

@@ -1,4 +1,4 @@
-import type { NovoTitulo, Sessao, Status, Titulo, Usuario } from "./tipos";
+import type { Contagem, NovoTitulo, Sessao, Status, Titulo, Usuario } from "./tipos";
 
 const CHAVE_SESSAO = "cineanchieta:sessao";
 
@@ -51,9 +51,14 @@ async function enviar(metodo: string, url: string, corpo?: unknown): Promise<Res
   return resposta;
 }
 
-// JSON não tem data: adicionadoEm chega como texto e precisa virar Date
+// JSON não tem data: adicionadoEm chega como texto e precisa virar Date.
+// generos também é normalizado para a tela nunca receber undefined.
 function converter(titulo: Titulo): Titulo {
-  return { ...titulo, adicionadoEm: new Date(titulo.adicionadoEm) };
+  return {
+    ...titulo,
+    generos: titulo.generos ?? [],
+    adicionadoEm: new Date(titulo.adicionadoEm),
+  };
 }
 
 // ---------- Usuários ----------
@@ -71,6 +76,14 @@ export async function criarConta(nome: string, email: string, senha: string): Pr
 export async function buscarEu(): Promise<Usuario> {
   const resposta = await enviar("GET", "/api/eu");
   return (await resposta.json()) as Usuario;
+}
+
+// ---------- Painel (Aula 6) ----------
+
+// Os números do painel vêm prontos do banco, calculados com GROUP BY.
+export async function buscarEstatisticas(): Promise<Contagem> {
+  const resposta = await enviar("GET", "/api/estatisticas");
+  return (await resposta.json()) as Contagem;
 }
 
 // ---------- Títulos ----------
